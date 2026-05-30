@@ -26,11 +26,11 @@ async def setup(ctx):
     )
 
     embed.set_image(
-        url="https://i.imgur.com/LMUi0v9.gif"
+        url="https://i.imgur.com/bDKuCUM.png"
     )
 
     embed.set_thumbnail(
-        url="https://i.imgur.com/V2AsfMp.png"
+        url="https://i.imgur.com/eRsBDQQ.jpeg"
     )
 
     view = discord.ui.View(timeout=None)
@@ -115,7 +115,7 @@ async def setup(ctx):
 
             "خذوا لكم لفة ونوّروهم في سيرفراتهم 👇\n\n"
 
-            "🌸 السيرفر الأول:\n"
+        
             "https://discord.gg/ang-els\n\n"
         )
 
