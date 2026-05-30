@@ -89,7 +89,7 @@ async def setup(ctx):
     async def invite_callback(interaction):
 
         await interaction.response.send_message(
-            "🔗 **رابط دعوة سيرفر كيوتن | Cuten Invite Link** 🔗\n•———————• 🧸 •———————•\nيا هلا فيكم بنور السيرفر! ✨\nإذا حبيتوا تنضموا لعائلتنا الحلوة، تفضلوا الرابط أدناه وانضموا لرحلتنا الممتعة في عالم كيوتن: 👇\nhttps://discord.gg/nNDupUJJXY",
+            "🔗 **رابط دعوة سيرفر كيوتن | Cuten Invite Link** 🔗\n•———————• 🧸 •———————•\nيا هلا فيكم بنور السيرفر! ✨\nإذا حبيتوا تنضموا لعائلتنا الحلوة، تفضلوا الرابط أدناه وانضموا لرحلتنا الممتعة في عالم كيوتن: 👇\nhttps://discord.gg/cuten",
             ephemeral=True
         )
 
@@ -115,8 +115,13 @@ async def setup(ctx):
 
             "خذوا لكم لفة ونوّروهم في سيرفراتهم 👇\n\n"
 
-        
+                        " السيرفر الاول"
             "https://discord.gg/ang-els\n\n"
+                           
+                           
+                    
+            " السيرفر الثاني"
+            "https://discord.gg/SWGnQh3rdV\n\n"
         )
 
         await interaction.response.send_message(content, ephemeral=True)
