@@ -1,3 +1,4 @@
+import os
 import discord
 from discord.ext import commands
 
@@ -256,5 +257,5 @@ async def setup(ctx):
     view.add_item(tag_button)
 
     await ctx.send(embed=embed, view=view)
-    
+
 bot.run(os.getenv("TOKEN"))
