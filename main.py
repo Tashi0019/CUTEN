@@ -231,9 +231,10 @@ async def setup(ctx):
     view.add_item(help_button)
 
     tag_button = discord.ui.Button(
-        label="مميزات التاق:<a:6Love:1509687854681424033> : ",
-        style=discord.ButtonStyle.secondary
-    )
+    label="مميزات التاق",
+    emoji="<a:6Love:1509687854681424033>",
+    style=discord.ButtonStyle.secondary
+)
 
     async def tag_callback(interaction):
 
