@@ -5,7 +5,6 @@ from discord.ext import commands
 from keep_alive import keep_alive
 
 keep_alive()
-
 intents = discord.Intents.default()
 intents.message_content = True
 
@@ -21,8 +20,7 @@ async def on_ready():
 async def setup(ctx):
 
     embed = discord.Embed(
-        title="cuten",
-        emoji="<a:fku:1509688683643666472> ",
+        title="<a:fku:1509688683643666472> cuten",
         description="أهلًا فيك في كيوتن\nاستخدم الأزرار بالأسفل للتعرف على سيرفرنا ومميزاته",
         color=0xCE44DB
     )
@@ -41,7 +39,7 @@ async def setup(ctx):
 
     about_button = discord.ui.Button(
         label="نبذة عنا ",
-        emoji="<a:A_:1449356217674764399> ",
+        emoji="<a:A_:1449356217674764399>",
         style=discord.ButtonStyle.secondary
     )
 
