@@ -21,9 +21,10 @@ async def on_ready():
 async def setup(ctx):
 
     embed = discord.Embed(
-        title="💎cuten",
+        title="cuten",
+        emoji="<a:fku:1509688683643666472> ",
         description="أهلًا فيك في كيوتن\nاستخدم الأزرار بالأسفل للتعرف على سيرفرنا ومميزاته",
-        color=0xb7c9ff
+        color=0xCE44DB
     )
 
     embed.set_image(
@@ -39,7 +40,8 @@ async def setup(ctx):
     # ---------------- نبذة عنا ----------------
 
     about_button = discord.ui.Button(
-        label="نبذة عنا 📖",
+        label="نبذة عنا ",
+        emoji="<a:A_:1449356217674764399> ",
         style=discord.ButtonStyle.secondary
     )
 
@@ -66,7 +68,8 @@ async def setup(ctx):
     # ---------------- القوانين ----------------
 
     rules_button = discord.ui.Button(
-        label="القوانين📜",
+        label="القوانين",
+        emoji="<a:6bonk:1509687959086043166>",
         style=discord.ButtonStyle.secondary
     )
 
@@ -83,7 +86,8 @@ async def setup(ctx):
     # ---------------- دعوة السيرفر ----------------
 
     invite_button = discord.ui.Button(
-        label="دعوة سيرفر 📩",
+        label="دعوة سيرفر ",
+        emoji="<a:heart:1511835528876654723>",
         style=discord.ButtonStyle.secondary
     )
 
@@ -100,7 +104,8 @@ async def setup(ctx):
     # ---------------- السيرفرات ----------------
 
     server_button = discord.ui.Button(
-        label="سيرفراتنا 🌐",
+        label="سيرفراتنا ",
+        emoji="<:wow:1509681789302603886>",
         style=discord.ButtonStyle.secondary
     )
 
@@ -122,7 +127,7 @@ async def setup(ctx):
                            
                     
             " السيرفر الثاني"
-            "https://discord.gg/SWGnQh3rdV\n\n"
+            "https://discord.gg/R2CnxvNFUJ\n\n"
         )
 
         await interaction.response.send_message(content, ephemeral=True)
@@ -134,7 +139,8 @@ async def setup(ctx):
     # ---------------- البوست ----------------
 
     boost_button = discord.ui.Button(
-        label="مميزات البوست🚀",
+        label="مميزات البوست",
+        emoji="<:emoji_87:1476137223161380934>",
         style=discord.ButtonStyle.secondary
     )
 
@@ -168,7 +174,8 @@ async def setup(ctx):
     # ---------------- اللفلات ----------------
 
     levels_button = discord.ui.Button(
-        label="مميزات اللفل📈",
+        label="مميزات اللفل",
+        emoji="<a:6celebrate:1509687911732351046>",
         style=discord.ButtonStyle.secondary
     )
 
@@ -212,7 +219,8 @@ async def setup(ctx):
     # ---------------- المساعدة ----------------
 
     help_button = discord.ui.Button(
-        label="مساعدة ❓",
+        label="مساعدة ",
+        emoji="<a:noih10:1509687143809941515>",
         style=discord.ButtonStyle.secondary
     )
 
