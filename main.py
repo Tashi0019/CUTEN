@@ -13,6 +13,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 @bot.event
 async def on_ready():
+    await bot.tree.sync()
     print(f"Logged on as {bot.user}!")
 
 
@@ -264,5 +265,131 @@ async def setup(ctx):
     view.add_item(tag_button)
 
     await ctx.send(embed=embed, view=view)
+
+SUGGESTION_CHANNEL_ID = 1506046070533128473
+
+
+class SuggestionModal(discord.ui.Modal, title="إرسال اقتراح"):
+
+    suggestion = discord.ui.TextInput(
+        label="اكتب اقتراحك هنا",
+        placeholder="مثال: سووا فعالية رعب يوم الجمعة",
+        style=discord.TextStyle.paragraph,
+        required=True,
+        max_length=1000
+    )
+
+    def __init__(self, suggestion_type):
+        super().__init__()
+        self.suggestion_type = suggestion_type
+
+    async def on_submit(self, interaction: discord.Interaction):
+
+        channel = interaction.guild.get_channel(SUGGESTION_CHANNEL_ID)
+
+        embed = discord.Embed(
+            title="💡 اقتراح جديد",
+            color=0xCE44DB
+        )
+
+        embed.add_field(
+            name="📂 نوع الاقتراح",
+            value=self.suggestion_type,
+            inline=False
+        )
+
+        embed.add_field(
+            name="📝 الاقتراح",
+            value=self.suggestion.value,
+            inline=False
+        )
+
+        embed.add_field(
+            name="👤 صاحب الاقتراح",
+            value=interaction.user.mention,
+            inline=False
+        )
+
+        embed.add_field(
+            name="📊 التصويت",
+            value="✅ 0 | ❌ 0",
+            inline=False
+        )
+
+        embed.set_thumbnail(url=interaction.user.display_avatar.url)
+
+        await channel.send(
+            embed=embed,
+            view=SuggestionVoteView()
+        )
+
+        await interaction.response.send_message(
+            "✅ تم إرسال اقتراحك بنجاح!",
+            ephemeral=True
+        )
+
+
+class SuggestionVoteView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+        self.yes_votes = set()
+        self.no_votes = set()
+
+    async def update_embed(self, interaction):
+        embed = interaction.message.embeds[0]
+
+        embed.set_field_at(
+            3,
+            name="📊 التصويت",
+            value=f"✅ {len(self.yes_votes)} | ❌ {len(self.no_votes)}",
+            inline=False
+        )
+
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    @discord.ui.button(label="موافق", emoji="✅", style=discord.ButtonStyle.success)
+    async def yes_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+
+        user_id = interaction.user.id
+
+        if user_id in self.yes_votes:
+            self.yes_votes.remove(user_id)
+        else:
+            self.yes_votes.add(user_id)
+            self.no_votes.discard(user_id)
+
+        await self.update_embed(interaction)
+
+    @discord.ui.button(label="غير موافق", emoji="❌", style=discord.ButtonStyle.danger)
+    async def no_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+
+        user_id = interaction.user.id
+
+        if user_id in self.no_votes:
+            self.no_votes.remove(user_id)
+        else:
+            self.no_votes.add(user_id)
+            self.yes_votes.discard(user_id)
+
+        await self.update_embed(interaction)
+
+
+@bot.tree.command(name="اقتراح", description="إرسال اقتراح للسيرفر")
+@discord.app_commands.choices(
+    النوع=[
+        discord.app_commands.Choice(name="🎉 فعاليات", value="🎉 فعاليات"),
+        discord.app_commands.Choice(name="🤖 بوتات", value="🤖 بوتات"),
+        discord.app_commands.Choice(name="💬 رومات", value="💬 رومات"),
+        discord.app_commands.Choice(name="🎨 تصميم", value="🎨 تصميم"),
+        discord.app_commands.Choice(name="🛠️ إدارة", value="🛠️ إدارة"),
+        discord.app_commands.Choice(name="✨ أخرى", value="✨ أخرى"),
+    ]
+)
+async def اقتراح(interaction: discord.Interaction, النوع: discord.app_commands.Choice[str]):
+    await interaction.response.send_modal(
+        SuggestionModal(النوع.value)
+    )
+
+
 
 bot.run(os.getenv("TOKEN"))
