@@ -22,6 +22,43 @@ async def on_ready():
 
 @bot.event
 async def on_message(message):
+    if message.content.strip() == "كيوتن":
+
+     guild = message.guild
+
+    embed = discord.Embed(
+        title="🎀 𝗖𝘂𝘁𝗲𝗻 𝗭𝗼𝗻𝗲",
+        description="أهلًا بك في عالم كيوتن ✨\nمجتمع لطيف يجمع الكيوتين تحت سقف واحد 💖",
+        color=0xCE44DB
+    )
+
+    embed.add_field(
+        name="🧸 معلومات المجتمع",
+        value=
+        f"الأعضاء: {guild.member_count}\n"
+        f"الرومات: {len(guild.channels)}\n"
+        f"الرتب: {len(guild.roles)}",
+        inline=True
+    )
+
+    embed.add_field(
+        name="🌸 الدعم",
+        value=
+        f"البوستات: {guild.premium_subscription_count}\n"
+        f"المستوى: {guild.premium_tier}",
+        inline=True
+    )
+
+    embed.set_thumbnail(
+        url=guild.icon.url if guild.icon else None
+    )
+
+    await message.reply(
+        embed=embed,
+        mention_author=False
+    )
+
+    
     if message.author.bot:
         return
     import random
@@ -51,6 +88,7 @@ async def on_message(message):
             mention_author=False
         )
 
+
         if message.channel.id == SUGGESTION_CHANNEL_ID:
             try:
                 await message.delete()
@@ -58,14 +96,11 @@ async def on_message(message):
                 pass
 
             await message.channel.send(
-                f"{message.author.mention} ✨ استخدم الأمر `/اقتراح` لإرسال اقتراحك بشكل مرتب.",
+                f"📮 {message.author.mention} لإرسال اقتراح جديد استخدم `/اقتراح` ثم اختر نوع الاقتراح.",
                 delete_after=8
             )
-            return
-
-        await bot.process_commands(message)
-
-
+        return
+    
 @bot.command()
 async def sync(ctx):
     synced = await bot.tree.sync()
