@@ -25,6 +25,17 @@ async def on_message(message):
     if message.author.bot:
         return
 
+    if "تاشيرو" in message.content:
+        await message.channel.send(
+            f"{message.author.mention}\n"
+            f"<@1044310877429575682>\n\n"
+            "╭─── ⋆⋅☆⋅⋆ ───╮\n"
+            "   لو ما رديت عليك\n"
+            "   اعرف إني مشغول\n"
+            "   أو إنك غثيث! \n"
+            "╰─── ⋆⋅☆⋅⋆ ───╯"
+        )
+
     if message.channel.id == SUGGESTION_CHANNEL_ID:
         try:
             await message.delete()
