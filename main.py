@@ -24,31 +24,46 @@ async def on_ready():
 async def on_message(message):
     if message.author.bot:
         return
+    import random
 
-    if "تاشيرو" in message.content:
-        await message.channel.send(
-            f"{message.author.mention}\n"
-            f"<@1044310877429575682>\n\n"
-            "╭─── ⋆⋅☆⋅⋆ ───╮\n"
-            "   لو ما رديت عليك\n"
-            "   اعرف إني مشغول\n"
-            "   أو إنك غثيث! \n"
-            "╰─── ⋆⋅☆⋅⋆ ───╯"
+    if "تاشيرو" in message.content.lower():
+
+        replies = [
+            "اذا ما رديت عليك اعرف اني مشغول او انك غثيث !",
+            "تم استدعاء تاشيرو، انتظر لين يفك الزحمة.",
+            "وصلت الرسالة، الباقي على مزاج تاشيرو."
+        ]
+
+        await message.reply(
+            f"{random.choice(replies)}\n\n<@1044310877429575682>",
+            mention_author=False
+        )
+    if "نيرف" in message.content.lower():
+
+        replies = [
+            "اذ شفت رسالتك برد عليك يا كيوتن ! <a:noih10:1509687143809941515> :>",
+            "نيرف استلم البلاغ، انتظر الرد. <a:02_nekopat:1512152074262024355> :>",
+            "تم منشن نيرف، عاد الله يعينك على الرد. <a:AA_CatBoy_Hug:1509700761431441478>:>"
+        ]
+
+        await message.reply(
+            f"{random.choice(replies)}\n\n<@944222907385643050>",
+            mention_author=False
         )
 
-    if message.channel.id == SUGGESTION_CHANNEL_ID:
-        try:
-            await message.delete()
-        except:
-            pass
+        if message.channel.id == SUGGESTION_CHANNEL_ID:
+            try:
+                await message.delete()
+            except:
+                pass
 
-        await message.channel.send(
-            f"{message.author.mention} ✨ استخدم الأمر `/اقتراح` لإرسال اقتراحك بشكل مرتب.",
-            delete_after=8
-        )
-        return
+            await message.channel.send(
+                f"{message.author.mention} ✨ استخدم الأمر `/اقتراح` لإرسال اقتراحك بشكل مرتب.",
+                delete_after=8
+            )
+            return
 
-    await bot.process_commands(message)
+        await bot.process_commands(message)
 
 
 @bot.command()
