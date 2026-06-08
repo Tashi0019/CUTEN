@@ -17,6 +17,31 @@ async def on_ready():
     print(f"Logged on as {bot.user}!")
 
 
+@bot.event
+async def on_message(message):
+    if message.author.bot:
+        return
+
+    if message.channel.id == SUGGESTION_CHANNEL_ID:
+        try:
+            await message.delete()
+        except:
+            pass
+
+        await message.channel.send(
+            f"{message.author.mention} ✨ استخدم `/اقتراح` من فوق لإرسال اقتراحك.",
+            delete_after=8
+        )
+        return
+
+    await bot.process_commands(message)
+
+
+@bot.command()
+async def sync(ctx):
+    synced = await bot.tree.sync()
+    await ctx.send(f"✅ تم مزامنة {len(synced)} أمر")
+
 @bot.tree.command(name="setup", description="إرسال لوحة تعريف السيرفر")
 async def setup(interaction: discord.Interaction):
 
@@ -267,12 +292,47 @@ async def setup(interaction: discord.Interaction):
 SUGGESTION_CHANNEL_ID = 1506046070533128473
 DISCUSSION_CHANNEL_ID = 1508502264703090779
 
+class AdminReplyModal(discord.ui.Modal, title="رد الإدارة على الاقتراح"):
+
+    reply = discord.ui.TextInput(
+        label="اكتب رد الإدارة",
+        placeholder="مثال: تم قبول الفكرة وراح نشتغل عليها قريبًا",
+        style=discord.TextStyle.paragraph,
+        required=True,
+        max_length=800
+    )
+
+    async def on_submit(self, interaction: discord.Interaction):
+        embed = interaction.message.embeds[0]
+
+        embed.add_field(
+            name="💬 رد الإدارة",
+            value=f"{self.reply.value}\n\nبواسطة: {interaction.user.mention}",
+            inline=False
+        )
+
+        embed.color = 0xF8BBD0
+
+        await interaction.response.edit_message(embed=embed)
+
 class SuggestionVoteView(discord.ui.View):
     def __init__(self, author_id):
         super().__init__(timeout=None)
         self.author_id = author_id
         self.yes_votes = set()
         self.no_votes = set()
+
+@discord.ui.button(label="رد الإدارة", emoji="💬", style=discord.ButtonStyle.secondary)
+async def admin_reply_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+
+    if not interaction.user.guild_permissions.manage_messages:
+        await interaction.response.send_message(
+            "❌ هذا الزر للإدارة فقط.",
+            ephemeral=True
+        )
+        return
+
+    await interaction.response.send_modal(AdminReplyModal())
 
     async def update_embed(self, interaction):
         embed = interaction.message.embeds[0]
