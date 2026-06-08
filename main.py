@@ -17,8 +17,8 @@ async def on_ready():
     print(f"Logged on as {bot.user}!")
 
 
-@bot.command()
-async def setup(ctx):
+@bot.tree.command(name="setup", description="إرسال لوحة تعريف السيرفر")
+async def setup(interaction: discord.Interaction):
 
     embed = discord.Embed(
         title="<a:fku:1509688683643666472> cuten",
@@ -264,9 +264,89 @@ async def setup(ctx):
     tag_button.callback = tag_callback
     view.add_item(tag_button)
 
-    await ctx.send(embed=embed, view=view)
-
 SUGGESTION_CHANNEL_ID = 1506046070533128473
+DISCUSSION_CHANNEL_ID = 1508502264703090779
+
+class SuggestionVoteView(discord.ui.View):
+    def __init__(self, author_id):
+        super().__init__(timeout=None)
+        self.author_id = author_id
+        self.yes_votes = set()
+        self.no_votes = set()
+
+    async def update_embed(self, interaction):
+        embed = interaction.message.embeds[0]
+
+        embed.set_field_at(
+            3,
+            name="📊 التصويت",
+            value=f"✅ {len(self.yes_votes)} | ❌ {len(self.no_votes)}",
+            inline=False
+        )
+
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    @discord.ui.button(label="موافق", emoji="✅", style=discord.ButtonStyle.success)
+    async def yes_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id == self.author_id:
+            await interaction.response.send_message("❌ ما تقدر تصوّت على اقتراحك.", ephemeral=True)
+            return
+
+        user_id = interaction.user.id
+
+        if user_id in self.yes_votes:
+            self.yes_votes.remove(user_id)
+        else:
+            self.yes_votes.add(user_id)
+            self.no_votes.discard(user_id)
+
+        await self.update_embed(interaction)
+
+    @discord.ui.button(label="غير موافق", emoji="❌", style=discord.ButtonStyle.danger)
+    async def no_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id == self.author_id:
+            await interaction.response.send_message("❌ ما تقدر تصوّت على اقتراحك.", ephemeral=True)
+            return
+
+        user_id = interaction.user.id
+
+        if user_id in self.no_votes:
+            self.no_votes.remove(user_id)
+        else:
+            self.no_votes.add(user_id)
+            self.yes_votes.discard(user_id)
+
+        await self.update_embed(interaction)
+
+    @discord.ui.button(label="المصوتين", emoji="📋", style=discord.ButtonStyle.primary)
+    async def voters_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        yes_list = "\n".join([f"<@{user_id}>" for user_id in self.yes_votes]) or "لا يوجد"
+        no_list = "\n".join([f"<@{user_id}>" for user_id in self.no_votes]) or "لا يوجد"
+
+        await interaction.response.send_message(
+            f"✅ **الموافقين:**\n{yes_list}\n\n"
+            f"❌ **غير الموافقين:**\n{no_list}",
+            ephemeral=True
+        )
+
+    @discord.ui.button(label="تم الاقتراح", emoji="🛠️", style=discord.ButtonStyle.secondary)
+    async def done_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not interaction.user.guild_permissions.manage_messages:
+            await interaction.response.send_message("❌ هذا الزر للإدارة فقط.", ephemeral=True)
+            return
+
+        embed = interaction.message.embeds[0]
+        embed.color = 0x57F287
+
+        embed.add_field(
+            name="✅ الحالة",
+            value=f"تم اعتماد الاقتراح بواسطة {interaction.user.mention}",
+            inline=False
+        )
+
+        button.disabled = True
+
+        await interaction.response.edit_message(embed=embed, view=self)
 
 
 class SuggestionModal(discord.ui.Modal, title="إرسال اقتراح"):
@@ -286,6 +366,7 @@ class SuggestionModal(discord.ui.Modal, title="إرسال اقتراح"):
     async def on_submit(self, interaction: discord.Interaction):
 
         channel = interaction.guild.get_channel(SUGGESTION_CHANNEL_ID)
+        discussion_channel = interaction.guild.get_channel(DISCUSSION_CHANNEL_ID)
 
         embed = discord.Embed(
             title="💡 اقتراح جديد",
@@ -318,60 +399,24 @@ class SuggestionModal(discord.ui.Modal, title="إرسال اقتراح"):
 
         embed.set_thumbnail(url=interaction.user.display_avatar.url)
 
-        await channel.send(
+        suggestion_message = await channel.send(
             embed=embed,
-            view=SuggestionVoteView()
+            view=SuggestionVoteView(interaction.user.id)
         )
+
+        if discussion_channel:
+            await discussion_channel.send(
+                f"📌 **اقتراح جديد للنقاش**\n"
+                f"👤 صاحب الاقتراح: {interaction.user.mention}\n"
+                f"📂 نوع الاقتراح: {self.suggestion_type}\n"
+                f"🔗 رابط الاقتراح: {suggestion_message.jump_url}",
+                embed=embed
+            )
 
         await interaction.response.send_message(
             "✅ تم إرسال اقتراحك بنجاح!",
             ephemeral=True
         )
-
-
-class SuggestionVoteView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-        self.yes_votes = set()
-        self.no_votes = set()
-
-    async def update_embed(self, interaction):
-        embed = interaction.message.embeds[0]
-
-        embed.set_field_at(
-            3,
-            name="📊 التصويت",
-            value=f"✅ {len(self.yes_votes)} | ❌ {len(self.no_votes)}",
-            inline=False
-        )
-
-        await interaction.response.edit_message(embed=embed, view=self)
-
-    @discord.ui.button(label="موافق", emoji="✅", style=discord.ButtonStyle.success)
-    async def yes_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-
-        user_id = interaction.user.id
-
-        if user_id in self.yes_votes:
-            self.yes_votes.remove(user_id)
-        else:
-            self.yes_votes.add(user_id)
-            self.no_votes.discard(user_id)
-
-        await self.update_embed(interaction)
-
-    @discord.ui.button(label="غير موافق", emoji="❌", style=discord.ButtonStyle.danger)
-    async def no_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-
-        user_id = interaction.user.id
-
-        if user_id in self.no_votes:
-            self.no_votes.remove(user_id)
-        else:
-            self.no_votes.add(user_id)
-            self.yes_votes.discard(user_id)
-
-        await self.update_embed(interaction)
 
 
 @bot.tree.command(name="اقتراح", description="إرسال اقتراح للسيرفر")
@@ -389,7 +434,5 @@ async def اقتراح(interaction: discord.Interaction, النوع: discord.app
     await interaction.response.send_modal(
         SuggestionModal(النوع.value)
     )
-
-
 
 bot.run(os.getenv("TOKEN"))
