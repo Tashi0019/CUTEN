@@ -1,10 +1,13 @@
 import os
 import discord
 from discord.ext import commands
-
 from keep_alive import keep_alive
 
 keep_alive()
+
+SUGGESTION_CHANNEL_ID = 1506046070533128473
+DISCUSSION_CHANNEL_ID = 1508502264703090779
+
 intents = discord.Intents.default()
 intents.message_content = True
 
@@ -29,7 +32,7 @@ async def on_message(message):
             pass
 
         await message.channel.send(
-            f"{message.author.mention} ✨ استخدم `/اقتراح` من فوق لإرسال اقتراحك.",
+            f"{message.author.mention} ✨ استخدم الأمر `/اقتراح` لإرسال اقتراحك بشكل مرتب.",
             delete_after=8
         )
         return
@@ -42,6 +45,7 @@ async def sync(ctx):
     synced = await bot.tree.sync()
     await ctx.send(f"✅ تم مزامنة {len(synced)} أمر")
 
+
 @bot.tree.command(name="setup", description="إرسال لوحة تعريف السيرفر")
 async def setup(interaction: discord.Interaction):
 
@@ -51,45 +55,33 @@ async def setup(interaction: discord.Interaction):
         color=0xCE44DB
     )
 
-    embed.set_image(
-        url="https://i.imgur.com/bDKuCUM.png"
-    )
-
-    embed.set_thumbnail(
-        url="https://i.imgur.com/eRsBDQQ.jpeg"
-    )
+    embed.set_image(url="https://i.imgur.com/bDKuCUM.png")
+    embed.set_thumbnail(url="https://i.imgur.com/eRsBDQQ.jpeg")
 
     view = discord.ui.View(timeout=None)
 
-    # ---------------- نبذة عنا ----------------
-
     about_button = discord.ui.Button(
-        label="نبذة عنا ",
+        label="نبذة عنا",
         emoji="<a:A_:1449356217674764399>",
         style=discord.ButtonStyle.secondary
     )
 
     async def about_callback(interaction):
-
         await interaction.response.send_message(
-            (
-                "> 🎀 **سيرفر كيوتن | Cuten 🎀**\n"
-                "> •———————• 🧸 •———————•\n"
-                "> مرحباً بكم في عالمنا.. مكاننا مو مجرد سيرفر، هو المساحة الدافئة اللي تجمعنا كل يوم ✨ هنا صممنا مجتمع مريح لكل شخص حاب يفضفض، يسولف، أو يشارك يومياته بكل عفوية.\n"
-                "> 🪐 **ليش إحنا هنا؟**\n"
-                "> 💬 **سوالف وراحة:** مكانك المثالي للاسترخاء والفضفضة بعد يوم طويل.\n"
-                "> 🤝 **احترام متبادل:** أساسنا هو التقدير والود بين الكل، بدون رسميات وبكل احترام.\n"
-                "> ☕ **أجواء رايقة:** شاركنا اهتماماتك، صورك، أو مجرد وجودك اللطيف معنا.\n"
-                "> •———————• 🤍 •———————•\n"
-                "> **خذ لك كوب قهوة ونوّرنا بالشات.. مساحتك الآمنة بانتظارك! 💖**\n"
-            ),
+            "> 🎀 **سيرفر كيوتن | Cuten 🎀**\n"
+            "> •———————• 🧸 •———————•\n"
+            "> مرحباً بكم في عالمنا.. مكاننا مو مجرد سيرفر، هو المساحة الدافئة اللي تجمعنا كل يوم ✨ هنا صممنا مجتمع مريح لكل شخص حاب يفضفض، يسولف، أو يشارك يومياته بكل عفوية.\n"
+            "> 🪐 **ليش إحنا هنا؟**\n"
+            "> 💬 **سوالف وراحة:** مكانك المثالي للاسترخاء والفضفضة بعد يوم طويل.\n"
+            "> 🤝 **احترام متبادل:** أساسنا هو التقدير والود بين الكل، بدون رسميات وبكل احترام.\n"
+            "> ☕ **أجواء رايقة:** شاركنا اهتماماتك، صورك، أو مجرد وجودك اللطيف معنا.\n"
+            "> •———————• 🤍 •———————•\n"
+            "> **خذ لك كوب قهوة ونوّرنا بالشات.. مساحتك الآمنة بانتظارك! 💖**",
             ephemeral=True
         )
 
     about_button.callback = about_callback
     view.add_item(about_button)
-
-    # ---------------- القوانين ----------------
 
     rules_button = discord.ui.Button(
         label="القوانين",
@@ -98,69 +90,61 @@ async def setup(interaction: discord.Interaction):
     )
 
     async def rules_callback(interaction):
-
         await interaction.response.send_message(
-            "📜 **قوانين مجتمع كيوتن | Cuten Rules** 📜\n•———————• 🧸 •———————•\nيا هلا فيكم بنور السيرفر! ✨\nعشان تظل مساحتنا آمنة، مريحة، ومليانة طاقة إيجابية للكل، حطينا هالقوانين البسيطة. التزامك فيها يعكس ذوقك ولطفك، ويساعدنا نحافظ على بيئة محترمة تجمعنا على الخير والسوالف الحلوة.\n**الرجاء الاطلاع على البنود أدناه والالتزام بها لضمان وقت ممتع للجميع: 👇**\nhttps://discord.com/channels/1506043098285867188/1506045317555163166/1506708096687538308",
+            "📜 **قوانين مجتمع كيوتن | Cuten Rules** 📜\n"
+            "•———————• 🧸 •———————•\n"
+            "يا هلا فيكم بنور السيرفر! ✨\n"
+            "عشان تظل مساحتنا آمنة، مريحة، ومليانة طاقة إيجابية للكل، حطينا هالقوانين البسيطة. التزامك فيها يعكس ذوقك ولطفك، ويساعدنا نحافظ على بيئة محترمة تجمعنا على الخير والسوالف الحلوة.\n"
+            "**الرجاء الاطلاع على البنود أدناه والالتزام بها لضمان وقت ممتع للجميع: 👇**\n"
+            "https://discord.com/channels/1506043098285867188/1506045317555163166/1506708096687538308",
             ephemeral=True
         )
 
     rules_button.callback = rules_callback
     view.add_item(rules_button)
 
-    # ---------------- دعوة السيرفر ----------------
-
     invite_button = discord.ui.Button(
-        label="دعوة سيرفر ",
+        label="دعوة سيرفر",
         emoji="<a:heart:1511835528876654723>",
         style=discord.ButtonStyle.secondary
     )
 
     async def invite_callback(interaction):
-
         await interaction.response.send_message(
-            "🔗 **رابط دعوة سيرفر كيوتن | Cuten Invite Link** 🔗\n•———————• 🧸 •———————•\nيا هلا فيكم بنور السيرفر! ✨\nإذا حبيتوا تنضموا لعائلتنا الحلوة، تفضلوا الرابط أدناه وانضموا لرحلتنا الممتعة في عالم كيوتن: 👇\nhttps://discord.gg/cuten",
+            "🔗 **رابط دعوة سيرفر كيوتن | Cuten Invite Link** 🔗\n"
+            "•———————• 🧸 •———————•\n"
+            "يا هلا فيكم بنور السيرفر! ✨\n"
+            "إذا حبيتوا تنضموا لعائلتنا الحلوة، تفضلوا الرابط أدناه وانضموا لرحلتنا الممتعة في عالم كيوتن: 👇\n"
+            "https://discord.gg/cuten",
             ephemeral=True
         )
 
     invite_button.callback = invite_callback
     view.add_item(invite_button)
 
-    # ---------------- السيرفرات ----------------
-
     server_button = discord.ui.Button(
-        label="سيرفراتنا ",
+        label="سيرفراتنا",
         emoji="<:wow:1509681789302603886>",
         style=discord.ButtonStyle.secondary
     )
 
     async def server_callback(interaction):
-        content = (
+        await interaction.response.send_message(
             "🤝 شركاء النجاح | Our Partners 🤝\n"
             "•———————• 🧸 •———————•\n\n"
-
             "يا هلا والله! ✨\n"
-            "هنا نعتز ونفتخر بصداقتنا مع سيرفرات ومجتمعات رهيبة "
-            "تشاركنا نفس الشغف والروح اللطيفة.\n"
+            "هنا نعتز ونفتخر بصداقتنا مع سيرفرات ومجتمعات رهيبة تشاركنا نفس الشغف والروح اللطيفة.\n"
             "هالمساحة مخصصة لدعم حلفائنا اللي نعتبرهم جزء من عائلتنا الكبيرة 💖\n\n"
-
             "خذوا لكم لفة ونوّروهم في سيرفراتهم 👇\n\n"
-
-                        " السيرفر الاول"
+            "السيرفر الاول\n"
             "https://discord.gg/ang-els\n\n"
-                           
-                           
-                    
-            " السيرفر الثاني"
-            "https://discord.gg/R2CnxvNFUJ\n\n"
+            "السيرفر الثاني\n"
+            "https://discord.gg/R2CnxvNFUJ",
+            ephemeral=True
         )
-
-        await interaction.response.send_message(content, ephemeral=True)
-
 
     server_button.callback = server_callback
     view.add_item(server_button)
-
-    # ---------------- البوست ----------------
 
     boost_button = discord.ui.Button(
         label="مميزات البوست",
@@ -169,9 +153,7 @@ async def setup(interaction: discord.Interaction):
     )
 
     async def boost_callback(interaction):
-
         await interaction.response.send_message(
-      (
             "> 🔮 **مـمـيـزات الـبـوسـت | Booster Perks** 🔮\n"
             "> ‏•———————• 🧸 •———————•\n"
             "> دعمكم هو اللي يخلي سيرفر **كيوتن** يكبـر ويتميّز! ✨ لـكل شخـص حـاب يدعمنـا بـ (Boost) ويساعدنـا نـطوّر المـكان، هـذي هـدايـا ومميـزات خـاصـة تقديراً للطفـكم وجـودكـم معنـا:\n"
@@ -187,15 +169,12 @@ async def setup(interaction: discord.Interaction):
             "> ⭐ أولـويـة الدخـول والـمشـاركـة في الفعـاليـات والجوائز.\n"
             "> 💐 صلاحية الكتابة في روم الداعمين فقط ! .\n"
             "> ‏•———————• 🤍 •———————•\n"
-            "> **شكراً لكل شخص يدعمنا ويساهم في رسم ابتسامة على مجتمعنا! 🍵**\n"
-        ),
-            ephemeral=True)
-        
+            "> **شكراً لكل شخص يدعمنا ويساهم في رسم ابتسامة على مجتمعنا! 🍵**",
+            ephemeral=True
+        )
 
     boost_button.callback = boost_callback
     view.add_item(boost_button)
-
-    # ---------------- اللفلات ----------------
 
     levels_button = discord.ui.Button(
         label="مميزات اللفل",
@@ -204,52 +183,46 @@ async def setup(interaction: discord.Interaction):
     )
 
     async def levels_callback(interaction):
-
         await interaction.response.send_message(
-              (
-        "📈 **مميزات اللفل| Levels System** 📈\n"
-        "\n> 🏆 **مـمـيـزات الـلـفـلات | Level Roles Perks** 🏆\n"
-        "> ‏•———————• 🧸 •———————•\n"
-        "> تفاعلكم وسوالفكم هي اللي تحوّلي السيرفر لبيتنا الثاني! ✨ وتقديراً لكل شخص يتفاعل معنا ويقضي وقته في **كيوتن**، سوينا لكم نظام لـفـلات مميز يعطيك رولات وصلاحيات كل ما زاد تفاعلك:\n"
-        "> ⭐ **【 <@&1506787978029039636> 】**\n"
-        "> 🏷️ رول مميز يثبت بداية تفاعلك معنا + إمكانية استخدام الإيموجيات والستيكرات الخارجية (External Emojis).\n"
-        "> ⭐ **【 <@&1506787834428788956> 】**\n"
-        "> 📸 صلاحية إرسال الصور والمقاطع في الشات العام.\n"
-        "> ⭐ **【 <@&1506788177195696169> 】**\n"
-        "> 🔗 صلاحية نشر الروابط (Links) بـشكل آمن .\n"
-        "> ⭐ **【 <@&1506788259542335528> 】**\n"
-        "> 🎙️ صلاحية استخدام الـ (Soundboard) والأصوات داخل الرومات الصوتية.\n"
-        "> 🏅 **【 <@&1506788312835424327> 】**\n"
-        "> 🛡️ رول مميز ب اسم من اختيارك (بدون لون).\n"
-        "> 🏅 **【 <@&1506788441571065986> 】**\n"
-        "> 💬 صلاحية تغيير النك نيم (Nickname) الخاص فيك بـنفسك.\n"
-        "> 🏅 **【 <@&1506788493161005167> 】**\n"
-        "> الحصول على اولوية المشاركة في الفعاليات !.\n"
-        "> 👑 **【 <@&1506788542196744232> 】**\n"
-        "> ✨ صلاحية الدخول لـروم كبار الشخصيات (VIP Chat).\n"
-        "> 👑 **【 <@&1506788592490512536> 】**\n"
-        "> 🎙️ صلاحية الأولوية في الكلام (Priority Speaker) داخل الرومات الصوتية والفعاليات.\n"
-        "> 🏆 **【 <@&1506788704264388731> 】**\n"
-        "> 🎭 رول خـاص بـإسم مـن إختيـارك ولـون مـن ذوقـك يثبت إنك من أساطير السيرفر!\n"
-        "> ‏•———————• 🤍 •———————•\n"
-        "> **شدّوا الحيل في الشات ونورونا بسوالفكم الحلوة عشان توصلون لأعلى اللفلات! 🫂✨**"
-    ),
+            "📈 **مميزات اللفل| Levels System** 📈\n"
+            "\n> 🏆 **مـمـيـزات الـلـفـلات | Level Roles Perks** 🏆\n"
+            "> ‏•———————• 🧸 •———————•\n"
+            "> تفاعلكم وسوالفكم هي اللي تحوّلي السيرفر لبيتنا الثاني! ✨ وتقديراً لكل شخص يتفاعل معنا ويقضي وقته في **كيوتن**، سوينا لكم نظام لـفـلات مميز يعطيك رولات وصلاحيات كل ما زاد تفاعلك:\n"
+            "> ⭐ **【 <@&1506787978029039636> 】**\n"
+            "> 🏷️ رول مميز يثبت بداية تفاعلك معنا + إمكانية استخدام الإيموجيات والستيكرات الخارجية (External Emojis).\n"
+            "> ⭐ **【 <@&1506787834428788956> 】**\n"
+            "> 📸 صلاحية إرسال الصور والمقاطع في الشات العام.\n"
+            "> ⭐ **【 <@&1506788177195696169> 】**\n"
+            "> 🔗 صلاحية نشر الروابط (Links) بـشكل آمن .\n"
+            "> ⭐ **【 <@&1506788259542335528> 】**\n"
+            "> 🎙️ صلاحية استخدام الـ (Soundboard) والأصوات داخل الرومات الصوتية.\n"
+            "> 🏅 **【 <@&1506788312835424327> 】**\n"
+            "> 🛡️ رول مميز ب اسم من اختيارك (بدون لون).\n"
+            "> 🏅 **【 <@&1506788441571065986> 】**\n"
+            "> 💬 صلاحية تغيير النك نيم (Nickname) الخاص فيك بـنفسك.\n"
+            "> 🏅 **【 <@&1506788493161005167> 】**\n"
+            "> الحصول على اولوية المشاركة في الفعاليات !.\n"
+            "> 👑 **【 <@&1506788542196744232> 】**\n"
+            "> ✨ صلاحية الدخول لـروم كبار الشخصيات (VIP Chat).\n"
+            "> 👑 **【 <@&1506788592490512536> 】**\n"
+            "> 🎙️ صلاحية الأولوية في الكلام (Priority Speaker) داخل الرومات الصوتية والفعاليات.\n"
+            "> 🏆 **【 <@&1506788704264388731> 】**\n"
+            "> 🎭 رول خـاص بـإسم مـن إختيـارك ولـون مـن ذوقـك يثبت إنك من أساطير السيرفر!\n"
+            "> ‏•———————• 🤍 •———————•\n"
+            "> **شدّوا الحيل في الشات ونورونا بسوالفكم الحلوة عشان توصلون لأعلى اللفلات! 🫂✨**",
             ephemeral=True
         )
 
     levels_button.callback = levels_callback
     view.add_item(levels_button)
 
-    # ---------------- المساعدة ----------------
-
     help_button = discord.ui.Button(
-        label="مساعدة ",
+        label="مساعدة",
         emoji="<a:noih10:1509687143809941515>",
         style=discord.ButtonStyle.secondary
     )
 
     async def help_callback(interaction):
-
         await interaction.response.send_message(
             "❓ **مساعدة | Help** ❓\n"
             "•———————• 🧸 •———————•\n"
@@ -263,13 +236,12 @@ async def setup(interaction: discord.Interaction):
     view.add_item(help_button)
 
     tag_button = discord.ui.Button(
-    label="مميزات التاق",
-    emoji="<a:6Love:1509687854681424033>",
-    style=discord.ButtonStyle.secondary
-)
+        label="مميزات التاق",
+        emoji="<a:6Love:1509687854681424033>",
+        style=discord.ButtonStyle.secondary
+    )
 
     async def tag_callback(interaction):
-
         await interaction.response.send_message(
             "## 🎀 ┃ 𝗖𝘂𝘁𝗲𝗻 𝗧𝗮𝗴 • دعم السيرفر بالتاق\n"
             "**يا هلا والله بالكيوتين الحلوين، ✨🌸**\n"
@@ -282,18 +254,17 @@ async def setup(interaction: discord.Interaction):
             "### 🍰 ┃ كيف تستلم مكافأتك اللطيفة؟\n"
             "أول ما تحط التاق جنب اسمك، شرفنا في روم \n"
             "**[ 💌 ┃ <#1506046052040704040>  ]** وبنعطيها لك بثانية! 🎈\n"
-            "شكراً لأنكم تخلون عالمنا ألطف وأجمل بوجودكم ودعمكم المستمر لينا ♡\n",
+            "شكراً لأنكم تخلون عالمنا ألطف وأجمل بوجودكم ودعمكم المستمر لينا ♡",
             ephemeral=True
         )
 
     tag_button.callback = tag_callback
     view.add_item(tag_button)
 
-SUGGESTION_CHANNEL_ID = 1506046070533128473
-DISCUSSION_CHANNEL_ID = 1508502264703090779
+    await interaction.response.send_message(embed=embed, view=view)
+
 
 class AdminReplyModal(discord.ui.Modal, title="رد الإدارة على الاقتراح"):
-
     reply = discord.ui.TextInput(
         label="اكتب رد الإدارة",
         placeholder="مثال: تم قبول الفكرة وراح نشتغل عليها قريبًا",
@@ -312,8 +283,8 @@ class AdminReplyModal(discord.ui.Modal, title="رد الإدارة على الا
         )
 
         embed.color = 0xF8BBD0
-
         await interaction.response.edit_message(embed=embed)
+
 
 class SuggestionVoteView(discord.ui.View):
     def __init__(self, author_id):
@@ -321,18 +292,6 @@ class SuggestionVoteView(discord.ui.View):
         self.author_id = author_id
         self.yes_votes = set()
         self.no_votes = set()
-
-@discord.ui.button(label="رد الإدارة", emoji="💬", style=discord.ButtonStyle.secondary)
-async def admin_reply_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-
-    if not interaction.user.guild_permissions.manage_messages:
-        await interaction.response.send_message(
-            "❌ هذا الزر للإدارة فقط.",
-            ephemeral=True
-        )
-        return
-
-    await interaction.response.send_modal(AdminReplyModal())
 
     async def update_embed(self, interaction):
         embed = interaction.message.embeds[0]
@@ -389,6 +348,14 @@ async def admin_reply_button(self, interaction: discord.Interaction, button: dis
             ephemeral=True
         )
 
+    @discord.ui.button(label="رد الإدارة", emoji="💬", style=discord.ButtonStyle.secondary)
+    async def admin_reply_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not interaction.user.guild_permissions.manage_messages:
+            await interaction.response.send_message("❌ هذا الزر للإدارة فقط.", ephemeral=True)
+            return
+
+        await interaction.response.send_modal(AdminReplyModal())
+
     @discord.ui.button(label="تم الاقتراح", emoji="🛠️", style=discord.ButtonStyle.secondary)
     async def done_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not interaction.user.guild_permissions.manage_messages:
@@ -405,12 +372,10 @@ async def admin_reply_button(self, interaction: discord.Interaction, button: dis
         )
 
         button.disabled = True
-
         await interaction.response.edit_message(embed=embed, view=self)
 
 
 class SuggestionModal(discord.ui.Modal, title="إرسال اقتراح"):
-
     suggestion = discord.ui.TextInput(
         label="اكتب اقتراحك هنا",
         placeholder="مثال: سووا فعالية رعب يوم الجمعة",
@@ -424,40 +389,21 @@ class SuggestionModal(discord.ui.Modal, title="إرسال اقتراح"):
         self.suggestion_type = suggestion_type
 
     async def on_submit(self, interaction: discord.Interaction):
-
         channel = interaction.guild.get_channel(SUGGESTION_CHANNEL_ID)
         discussion_channel = interaction.guild.get_channel(DISCUSSION_CHANNEL_ID)
 
         embed = discord.Embed(
-            title="💡 اقتراح جديد",
+            title="✨ اقتراح جديد | Cuten Zone ✨",
             color=0xCE44DB
         )
 
-        embed.add_field(
-            name="📂 نوع الاقتراح",
-            value=self.suggestion_type,
-            inline=False
-        )
-
-        embed.add_field(
-            name="📝 الاقتراح",
-            value=self.suggestion.value,
-            inline=False
-        )
-
-        embed.add_field(
-            name="👤 صاحب الاقتراح",
-            value=interaction.user.mention,
-            inline=False
-        )
-
-        embed.add_field(
-            name="📊 التصويت",
-            value="✅ 0 | ❌ 0",
-            inline=False
-        )
+        embed.add_field(name="📂 نوع الاقتراح", value=self.suggestion_type, inline=False)
+        embed.add_field(name="📝 الاقتراح", value=self.suggestion.value, inline=False)
+        embed.add_field(name="👤 صاحب الاقتراح", value=interaction.user.mention, inline=False)
+        embed.add_field(name="📊 التصويت", value="✅ 0 | ❌ 0", inline=False)
 
         embed.set_thumbnail(url=interaction.user.display_avatar.url)
+        embed.set_footer(text="Cuten Suggestions System")
 
         suggestion_message = await channel.send(
             embed=embed,
@@ -491,8 +437,7 @@ class SuggestionModal(discord.ui.Modal, title="إرسال اقتراح"):
     ]
 )
 async def اقتراح(interaction: discord.Interaction, النوع: discord.app_commands.Choice[str]):
-    await interaction.response.send_modal(
-        SuggestionModal(النوع.value)
-    )
+    await interaction.response.send_modal(SuggestionModal(النوع.value))
+
 
 bot.run(os.getenv("TOKEN"))
