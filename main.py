@@ -137,50 +137,57 @@ async def on_message(message):
         await message.reply(embed=embed, mention_author=False)
         return
     if message.content.strip().lower() == "تاشيرو":
-        replies = [
-            "اذا ما رديت عليك اعرف اني مشغول او انك غثيث !",
-            "اسفين تاشيرو على ازعاجك بس اتمنى انك ترد على الكيوت ذا <:2heeh:1509687414921363467>",
-        ]
 
-        gifs = [
-            "https://media1.tenor.com/m/t4uPjLi-OHUAAAAd/magic-kaito-detective-conan.gif",
-        ]
+     replies = [
+        ("text", "اذا ما رديت عليك اعرف اني مشغول او انك غثيث !"),
+        ("text", "اسفين تاشيرو على ازعاجك بس اتمنى انك ترد على الكيوت ذا <:2heeh:1509687414921363467>"),
+        ("gif", "https://media1.tenor.com/m/t4uPjLi-OHUAAAAd/magic-kaito-detective-conan.gif")
+    ]
 
-        await message.reply(
-            f"{random.choice(replies)}\n\n<@1044310877429575682>",
-            mention_author=False
+    reply_type, content = random.choice(replies)
+
+    if reply_type == "text":
+        await message.channel.send(
+            f"{content}\n\n<@1044310877429575682>"
         )
 
-        if random.randint(1, 3) == 1:
-            gif_embed = discord.Embed(color=0xCE44DB)
-            gif_embed.set_image(url=random.choice(gifs))
-            await message.channel.send(embed=gif_embed)
+    else:
+        embed = discord.Embed(color=0xCE44DB)
+        embed.set_image(url=content)
 
-        return
+        await message.channel.send(
+    content="<@1044310877429575682>",
+    embed=embed
+)
+
+    return
 
 
     if message.content.strip().lower() == "نيرف":
-        replies = [
-            "اذ شفت رسالتك برد عليك يا كيوتن ! <a:noih10:1509687143809941515> :>",
-            "لحظات وارد عليك يا كيوتن <a:02_nekopat:1512152074262024355>",
-        ]
 
-        gifs = [
-            "https://media1.tenor.com/m/Cc_MrXDaqIcAAAAd/gowther-bailando.gif",
-            "https://media1.tenor.com/m/izHpHVnvDVkAAAAd/anime-kawaii.gif",
-        ]
+     replies = [
+        ("text", "اذ شفت رسالتك برد عليك يا كيوتن !"),
+        ("text", "لحظات وارد عليك يا كيوتن."),
+        ("gif", "https://media1.tenor.com/m/Cc_MrXDaqIcAAAAd/gowther-bailando.gif")
+    ]
 
-        await message.reply(
-            f"{random.choice(replies)}\n\n<@944222907385643050>",
-            mention_author=False
+    reply_type, content = random.choice(replies)
+
+    if reply_type == "text":
+        await message.channel.send(
+            f"{content}\n\n<@944222907385643050>"
         )
 
-        if random.randint(1, 3) == 1:
-            gif_embed = discord.Embed(color=0xCE44DB)
-            gif_embed.set_image(url=random.choice(gifs))
-            await message.channel.send(embed=gif_embed)
+    else:
+        embed = discord.Embed(color=0xCE44DB)
+        embed.set_image(url=content)
 
-        return
+        await message.channel.send(
+    content="<@944222907385643050>",
+    embed=embed
+)
+
+    return
 
 
 @bot.command()
