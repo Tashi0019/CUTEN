@@ -1,5 +1,6 @@
 import os
 import json
+import random
 from datetime import datetime
 import discord
 from discord.ext import commands
@@ -12,8 +13,11 @@ DISCUSSION_CHANNEL_ID = 1508502264703090779
 POINTS_FILE = "points.json"
 DAILY_MESSAGES_GOAL = 30
 DAILY_MESSAGES_REWARD = 20
+
 intents = discord.Intents.default()
 intents.message_content = True
+intents.members = True
+intents.presences = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
@@ -24,9 +28,7 @@ async def on_ready():
     print(f"Logged on as {bot.user}!")
 
 
-@bot.event
-
-async def load_points():
+def load_points():
     try:
         with open(POINTS_FILE, "r", encoding="utf-8") as file:
             return json.load(file)
@@ -73,8 +75,13 @@ def add_message_progress(user_id):
     save_points(data)
     return False
 
+
+@bot.event
 async def on_message(message):
-       if message.content.strip() == "كيوتن":
+    if message.author.bot:
+        return
+
+    if message.content.strip() == "كيوتن":
         guild = message.guild
 
         humans = len([m for m in guild.members if not m.bot])
@@ -130,13 +137,7 @@ async def on_message(message):
         await message.reply(embed=embed, mention_author=False)
         return
 
-    
-       if message.author.bot:
-        return
-       import random
-
-       if "تاشيرو" in message.content.lower():
-
+    if "تاشيرو" in message.content.lower():
         replies = [
             "اذا ما رديت عليك اعرف اني مشغول او انك غثيث !",
             "تم استدعاء تاشيرو، انتظر لين يفك الزحمة.",
@@ -147,8 +148,8 @@ async def on_message(message):
             f"{random.choice(replies)}\n\n<@1044310877429575682>",
             mention_author=False
         )
-       if "نيرف" in message.content.lower():
 
+    if "نيرف" in message.content.lower():
         replies = [
             "اذ شفت رسالتك برد عليك يا كيوتن ! <a:noih10:1509687143809941515> :>",
             "نيرف استلم البلاغ، انتظر الرد. <a:02_nekopat:1512152074262024355> :>",
@@ -160,26 +161,29 @@ async def on_message(message):
             mention_author=False
         )
 
+    if message.channel.id == SUGGESTION_CHANNEL_ID:
+        try:
+            await message.delete()
+        except:
+            pass
 
-        if message.channel.id == SUGGESTION_CHANNEL_ID:
-            try:
-                await message.delete()
-            except:
-                pass
+        await message.channel.send(
+            f"📮 {message.author.mention} لإرسال اقتراح جديد استخدم `/اقتراح` ثم اختر نوع الاقتراح.",
+            delete_after=8
+        )
+        return
 
-            await message.channel.send(
-                f"📮 {message.author.mention} لإرسال اقتراح جديد استخدم `/اقتراح` ثم اختر نوع الاقتراح.",
-                delete_after=8
-            )
-        return  
-        completed = add_message_progress(message.author.id)
+    completed = add_message_progress(message.author.id)
 
-        if completed:
-         await message.channel.send(
+    if completed:
+        await message.channel.send(
             f"{message.author.mention} أنجزت المهمة اليومية!\n"
             f"حصلت على {DAILY_MESSAGES_REWARD} نقطة"
         )
-         await bot.process_commands(message)
+
+    await bot.process_commands(message)
+
+
 @bot.command()
 async def sync(ctx):
     synced = await bot.tree.sync()
