@@ -1,4 +1,6 @@
 import os
+import json
+from datetime import datetime
 import discord
 from discord.ext import commands
 from keep_alive import keep_alive
@@ -7,7 +9,9 @@ keep_alive()
 
 SUGGESTION_CHANNEL_ID = 1506046070533128473
 DISCUSSION_CHANNEL_ID = 1508502264703090779
-
+POINTS_FILE = "points.json"
+DAILY_MESSAGES_GOAL = 30
+DAILY_MESSAGES_REWARD = 20
 intents = discord.Intents.default()
 intents.message_content = True
 
@@ -21,49 +25,117 @@ async def on_ready():
 
 
 @bot.event
+
+async def load_points():
+    try:
+        with open(POINTS_FILE, "r", encoding="utf-8") as file:
+            return json.load(file)
+    except:
+        return {}
+
+
+def save_points(data):
+    with open(POINTS_FILE, "w", encoding="utf-8") as file:
+        json.dump(data, file, ensure_ascii=False, indent=4)
+
+
+def get_today():
+    return datetime.now().strftime("%Y-%m-%d")
+
+
+def add_message_progress(user_id):
+    data = load_points()
+    user_id = str(user_id)
+    today = get_today()
+
+    if user_id not in data:
+        data[user_id] = {
+            "points": 0,
+            "daily_messages": 0,
+            "last_day": today,
+            "daily_done": False
+        }
+
+    if data[user_id]["last_day"] != today:
+        data[user_id]["daily_messages"] = 0
+        data[user_id]["last_day"] = today
+        data[user_id]["daily_done"] = False
+
+    if not data[user_id]["daily_done"]:
+        data[user_id]["daily_messages"] += 1
+
+        if data[user_id]["daily_messages"] >= DAILY_MESSAGES_GOAL:
+            data[user_id]["points"] += DAILY_MESSAGES_REWARD
+            data[user_id]["daily_done"] = True
+            save_points(data)
+            return True
+
+    save_points(data)
+    return False
+
 async def on_message(message):
-    if message.content.strip() == "كيوتن":
+       if message.content.strip() == "كيوتن":
+        guild = message.guild
 
-     guild = message.guild
+        humans = len([m for m in guild.members if not m.bot])
+        bots = len([m for m in guild.members if m.bot])
+        online = len([m for m in guild.members if m.status != discord.Status.offline])
+        text_channels = len(guild.text_channels)
+        voice_channels = len(guild.voice_channels)
+        categories = len(guild.categories)
+        created_at = discord.utils.format_dt(guild.created_at, style="D")
 
-    embed = discord.Embed(
-        title="🎀 𝗖𝘂𝘁𝗲𝗻 𝗭𝗼𝗻𝗲",
-        description="أهلًا بك في عالم كيوتن ✨\nمجتمع لطيف يجمع الكيوتين تحت سقف واحد 💖",
-        color=0xCE44DB
-    )
+        embed = discord.Embed(
+            title="🎀 𝗖𝘂𝘁𝗲𝗻 𝗭𝗼𝗻𝗲 🎀",
+            description=(
+                "✨ **أهلاً بك في عالم كيوتن** ✨\n"
+                "مجتمع لطيف، سوالف، فعاليات، وأجواء رايقة.\n\n"
 
-    embed.add_field(
-        name="🧸 معلومات المجتمع",
-        value=
-        f"الأعضاء: {guild.member_count}\n"
-        f"الرومات: {len(guild.channels)}\n"
-        f"الرتب: {len(guild.roles)}",
-        inline=True
-    )
+                "╭───・🧸 معلومات المجتمع・───╮\n"
+                f"👥 **كل الأعضاء:** {guild.member_count}\n"
+                f"👤 **الأعضاء الحقيقيين:** {humans}\n"
+                f"🤖 **البوتات:** {bots}\n"
+                f"🟢 **المتصلين الآن:** {online}\n"
+                f"👑 **المالك:** {guild.owner.mention}\n"
+                f"📅 **تأسس السيرفر:** {created_at}\n"
+                "╰────────────────────╯\n\n"
 
-    embed.add_field(
-        name="🌸 الدعم",
-        value=
-        f"البوستات: {guild.premium_subscription_count}\n"
-        f"المستوى: {guild.premium_tier}",
-        inline=True
-    )
+                "╭───・📁 معلومات الرومات・───╮\n"
+                f"💬 **رومات كتابية:** {text_channels}\n"
+                f"🎙️ **رومات صوتية:** {voice_channels}\n"
+                f"🗂️ **الأقسام:** {categories}\n"
+                f"📌 **كل الرومات:** {len(guild.channels)}\n"
+                "╰────────────────────╯\n\n"
 
-    embed.set_thumbnail(
-        url=guild.icon.url if guild.icon else None
-    )
+                "╭───・🌸 الدعم والتجميل・───╮\n"
+                f"🚀 **عدد البوستات:** {guild.premium_subscription_count}\n"
+                f"💎 **مستوى البوست:** {guild.premium_tier}\n"
+                f"🎭 **عدد الرتب:** {len(guild.roles)}\n"
+                f"😺 **الإيموجيات:** {len(guild.emojis)}\n"
+                f"🎨 **الستيكرات:** {len(guild.stickers)}\n"
+                "╰────────────────────╯\n\n"
 
-    await message.reply(
-        embed=embed,
-        mention_author=False
-    )
+                "💖 **شكراً لكونك جزء من عائلة كيوتن**"
+            ),
+            color=0xCE44DB
+        )
+
+        embed.set_thumbnail(url=guild.icon.url if guild.icon else None)
+
+        if guild.banner:
+            embed.set_image(url=guild.banner.url)
+
+        embed.set_footer(text="Cuten Server Information")
+
+        await message.reply(embed=embed, mention_author=False)
+        return
 
     
-    if message.author.bot:
+       if message.author.bot:
         return
-    import random
+       import random
 
-    if "تاشيرو" in message.content.lower():
+       if "تاشيرو" in message.content.lower():
 
         replies = [
             "اذا ما رديت عليك اعرف اني مشغول او انك غثيث !",
@@ -75,7 +147,7 @@ async def on_message(message):
             f"{random.choice(replies)}\n\n<@1044310877429575682>",
             mention_author=False
         )
-    if "نيرف" in message.content.lower():
+       if "نيرف" in message.content.lower():
 
         replies = [
             "اذ شفت رسالتك برد عليك يا كيوتن ! <a:noih10:1509687143809941515> :>",
@@ -99,8 +171,15 @@ async def on_message(message):
                 f"📮 {message.author.mention} لإرسال اقتراح جديد استخدم `/اقتراح` ثم اختر نوع الاقتراح.",
                 delete_after=8
             )
-        return
-    
+        return  
+        completed = add_message_progress(message.author.id)
+
+        if completed:
+         await message.channel.send(
+            f"{message.author.mention} أنجزت المهمة اليومية!\n"
+            f"حصلت على {DAILY_MESSAGES_REWARD} نقطة"
+        )
+         await bot.process_commands(message)
 @bot.command()
 async def sync(ctx):
     synced = await bot.tree.sync()
@@ -499,6 +578,54 @@ class SuggestionModal(discord.ui.Modal, title="إرسال اقتراح"):
 )
 async def اقتراح(interaction: discord.Interaction, النوع: discord.app_commands.Choice[str]):
     await interaction.response.send_modal(SuggestionModal(النوع.value))
+@bot.tree.command(name="نقاطي", description="عرض نقاطك")
+async def نقاطي(interaction: discord.Interaction):
+    data = load_points()
+    user_id = str(interaction.user.id)
 
+    points = data.get(user_id, {}).get("points", 0)
+    messages = data.get(user_id, {}).get("daily_messages", 0)
+    done = data.get(user_id, {}).get("daily_done", False)
+
+    status = "مكتملة" if done else f"{messages}/{DAILY_MESSAGES_GOAL}"
+
+    await interaction.response.send_message(
+        f"نقاطك: **{points}**\n"
+        f"مهمة الرسائل اليومية: **{status}**",
+        ephemeral=True
+    )
+
+
+@bot.tree.command(name="المهام", description="عرض المهام اليومية")
+async def المهام(interaction: discord.Interaction):
+    await interaction.response.send_message(
+        f"المهام اليومية:\n"
+        f"أرسل {DAILY_MESSAGES_GOAL} رسالة وخذ {DAILY_MESSAGES_REWARD} نقطة",
+        ephemeral=True
+    )
+
+
+@bot.tree.command(name="توب_النقاط", description="عرض أكثر الأعضاء نقاطًا")
+async def توب_النقاط(interaction: discord.Interaction):
+    data = load_points()
+
+    sorted_users = sorted(
+        data.items(),
+        key=lambda item: item[1].get("points", 0),
+        reverse=True
+    )[:10]
+
+    if not sorted_users:
+        await interaction.response.send_message("ما فيه نقاط للحين.", ephemeral=True)
+        return
+
+    text = ""
+
+    for index, (user_id, info) in enumerate(sorted_users, start=1):
+        text += f"{index}. <@{user_id}> — **{info.get('points', 0)}** نقطة\n"
+
+    await interaction.response.send_message(
+        f"توب النقاط:\n{text}"
+    )
 
 bot.run(os.getenv("TOKEN"))
