@@ -141,7 +141,7 @@ async def on_message(message):
         replies = [
             ("text", "اذا ما رديت عليك اعرف اني مشغول او انك غثيث !"),
             ("text", "اسفين تاشيرو على ازعاجك بس اتمنى انك ترد على الكيوت ذا <:2heeh:1509687414921363467>"),
-            ("gif", "https://media.discordapp.net/attachments/1508502264703090779/1513990487273640088/tenor.gif?ex=6a29bd04&is=6a286b84&hm=2e0bcf8c1f74845a385aca1b06af8df260f7e78695fec154ff43c30a8f50c3b6&=&width=1000&height=563")
+            ("gif", "https://cdn.discordapp.com/attachments/1508502008720789565/1513995625052508250/tenor.gif?ex=6a29c1cd&is=6a28704d&hm=6d552be6b55400d9e4ed570ee712599f253f7dd6b94e97087b17f5d91ca7e04d&")
         ]
 
         reply_type, content = random.choice(replies)
@@ -159,7 +159,8 @@ async def on_message(message):
         replies = [
             ("text", "اذ شفت رسالتك برد عليك يا كيوتن !"),
             ("text", "لحظات وارد عليك يا كيوتن."),
-            ("gif", "https://media.discordapp.net/attachments/1508502264703090779/1513990486342504499/tenor_2.gif?ex=6a29bd04&is=6a286b84&hm=7913b6be069ece6adfa65b48f63bdfff428d44633c31af1590a3346a9c8cac53&=&width=803&height=1000")
+            ("gif", "https://cdn.discordapp.com/attachments/1508502008720789565/1513995624419430621/tenor_2.gif?ex=6a29c1cd&is=6a28704d&hm=5554aa2c193e3eab5d9f1b79612268bcb179dbb692dafda14d1805b00dbfcfa4&")
+            ("gif", "https://cdn.discordapp.com/attachments/1508502008720789565/1513995624750776513/tenor_1.gif?ex=6a29c1cd&is=6a28704d&hm=f49b255aeeb3452c0dd8862b91f5884584f692268d0078934a0e1d45a2bd52fe&")
         ]
 
         reply_type, content = random.choice(replies)
