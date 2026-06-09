@@ -135,13 +135,13 @@ async def on_message(message):
         embed.set_footer(text="Cuten Server Information")
 
         await message.reply(embed=embed, mention_author=False)
-        return    
-        if message.content.strip().lower() == "تاشيرو":
+        return
 
-         replies = [
+    if message.content.strip().lower() == "تاشيرو":
+        replies = [
             ("text", "اذا ما رديت عليك اعرف اني مشغول او انك غثيث !"),
             ("text", "اسفين تاشيرو على ازعاجك بس اتمنى انك ترد على الكيوت ذا <:2heeh:1509687414921363467>"),
-            ("gif", "https://media1.tenor.com/m/t4uPjLi-OHUAAAAd/magic-kaito-detective-conan.gif")
+            ("gif", "https://media.discordapp.net/attachments/1508502264703090779/1513990487273640088/tenor.gif?ex=6a29bd04&is=6a286b84&hm=2e0bcf8c1f74845a385aca1b06af8df260f7e78695fec154ff43c30a8f50c3b6&=&width=1000&height=563")
         ]
 
         reply_type, content = random.choice(replies)
@@ -150,20 +150,16 @@ async def on_message(message):
             await message.channel.send(
                 f"{content}\n\n<@1044310877429575682>"
             )
-
         else:
             await message.channel.send(content)
-            await message.channel.send("<@1044310877429575682>")
 
         return
 
-
     if message.content.strip().lower() == "نيرف":
-
         replies = [
             ("text", "اذ شفت رسالتك برد عليك يا كيوتن !"),
             ("text", "لحظات وارد عليك يا كيوتن."),
-            ("gif", "https://media1.tenor.com/m/Cc_MrXDaqIcAAAAd/gowther-bailando.gif")
+            ("gif", "https://media.discordapp.net/attachments/1508502264703090779/1513990486342504499/tenor_2.gif?ex=6a29bd04&is=6a286b84&hm=7913b6be069ece6adfa65b48f63bdfff428d44633c31af1590a3346a9c8cac53&=&width=803&height=1000")
         ]
 
         reply_type, content = random.choice(replies)
@@ -172,12 +168,32 @@ async def on_message(message):
             await message.channel.send(
                 f"{content}\n\n<@944222907385643050>"
             )
-
         else:
             await message.channel.send(content)
-            await message.channel.send("<@944222907385643050>")
 
         return
+
+    if message.channel.id == SUGGESTION_CHANNEL_ID:
+        try:
+            await message.delete()
+        except:
+            pass
+
+        await message.channel.send(
+            f"📮 {message.author.mention} لإرسال اقتراح جديد استخدم `/اقتراح` ثم اختر نوع الاقتراح.",
+            delete_after=8
+        )
+        return
+
+    completed = add_message_progress(message.author.id)
+
+    if completed:
+        await message.channel.send(
+            f"{message.author.mention} أنجزت المهمة اليومية!\n"
+            f"حصلت على {DAILY_MESSAGES_REWARD} نقطة"
+        )
+
+    await bot.process_commands(message)
 
 
 @bot.command()
