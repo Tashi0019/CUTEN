@@ -159,8 +159,8 @@ async def on_message(message):
         replies = [
             ("text", "اذ شفت رسالتك برد عليك يا كيوتن !"),
             ("text", "لحظات وارد عليك يا كيوتن."),
-            ("gif", "https://cdn.discordapp.com/attachments/1508502008720789565/1513995624419430621/tenor_2.gif?ex=6a29c1cd&is=6a28704d&hm=5554aa2c193e3eab5d9f1b79612268bcb179dbb692dafda14d1805b00dbfcfa4&")
-            ("gif", "https://cdn.discordapp.com/attachments/1508502008720789565/1513995624750776513/tenor_1.gif?ex=6a29c1cd&is=6a28704d&hm=f49b255aeeb3452c0dd8862b91f5884584f692268d0078934a0e1d45a2bd52fe&")
+            ("gif", "https://cdn.discordapp.com/attachments/1508502008720789565/1513995624419430621/tenor_2.gif?ex=6a29c1cd&is=6a28704d&hm=5554aa2c193e3eab5d9f1b79612268bcb179dbb692dafda14d1805b00dbfcfa4&"),
+            ("gif", "https://cdn.discordapp.com/attachments/1508502008720789565/1513995624750776513/tenor_1.gif?ex=6a29c1cd&is=6a28704d&hm=f49b255aeeb3452c0dd8862b91f5884584f692268d0078934a0e1d45a2bd52fe&"),
         ]
 
         reply_type, content = random.choice(replies)
