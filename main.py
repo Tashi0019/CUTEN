@@ -135,59 +135,49 @@ async def on_message(message):
         embed.set_footer(text="Cuten Server Information")
 
         await message.reply(embed=embed, mention_author=False)
+        return    
+        if message.content.strip().lower() == "تاشيرو":
+
+         replies = [
+            ("text", "اذا ما رديت عليك اعرف اني مشغول او انك غثيث !"),
+            ("text", "اسفين تاشيرو على ازعاجك بس اتمنى انك ترد على الكيوت ذا <:2heeh:1509687414921363467>"),
+            ("gif", "https://media1.tenor.com/m/t4uPjLi-OHUAAAAd/magic-kaito-detective-conan.gif")
+        ]
+
+        reply_type, content = random.choice(replies)
+
+        if reply_type == "text":
+            await message.channel.send(
+                f"{content}\n\n<@1044310877429575682>"
+            )
+
+        else:
+            await message.channel.send(content)
+            await message.channel.send("<@1044310877429575682>")
+
         return
-    if message.content.strip().lower() == "تاشيرو":
-
-     replies = [
-        ("text", "اذا ما رديت عليك اعرف اني مشغول او انك غثيث !"),
-        ("text", "اسفين تاشيرو على ازعاجك بس اتمنى انك ترد على الكيوت ذا <:2heeh:1509687414921363467>"),
-        ("gif", "https://media1.tenor.com/m/t4uPjLi-OHUAAAAd/magic-kaito-detective-conan.gif")
-    ]
-
-    reply_type, content = random.choice(replies)
-
-    if reply_type == "text":
-        await message.channel.send(
-            f"{content}\n\n<@1044310877429575682>"
-        )
-
-    else:
-        embed = discord.Embed(color=0xCE44DB)
-        embed.set_image(url=content)
-
-        await message.channel.send(
-    content="<@1044310877429575682>",
-    embed=embed
-)
-
-    return
 
 
     if message.content.strip().lower() == "نيرف":
 
-     replies = [
-        ("text", "اذ شفت رسالتك برد عليك يا كيوتن !"),
-        ("text", "لحظات وارد عليك يا كيوتن."),
-        ("gif", "https://media1.tenor.com/m/Cc_MrXDaqIcAAAAd/gowther-bailando.gif")
-    ]
+        replies = [
+            ("text", "اذ شفت رسالتك برد عليك يا كيوتن !"),
+            ("text", "لحظات وارد عليك يا كيوتن."),
+            ("gif", "https://media1.tenor.com/m/Cc_MrXDaqIcAAAAd/gowther-bailando.gif")
+        ]
 
-    reply_type, content = random.choice(replies)
+        reply_type, content = random.choice(replies)
 
-    if reply_type == "text":
-        await message.channel.send(
-            f"{content}\n\n<@944222907385643050>"
-        )
+        if reply_type == "text":
+            await message.channel.send(
+                f"{content}\n\n<@944222907385643050>"
+            )
 
-    else:
-        embed = discord.Embed(color=0xCE44DB)
-        embed.set_image(url=content)
+        else:
+            await message.channel.send(content)
+            await message.channel.send("<@944222907385643050>")
 
-        await message.channel.send(
-    content="<@944222907385643050>",
-    embed=embed
-)
-
-    return
+        return
 
 
 @bot.command()
