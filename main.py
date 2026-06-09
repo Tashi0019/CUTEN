@@ -140,8 +140,8 @@ async def on_message(message):
     if message.content.strip().lower() == "تاشيرو":
         replies = [
             "اذا ما رديت عليك اعرف اني مشغول او انك غثيث !",
-            "اسفين تاشيرو على ازعاجك بس اتمنى انك ترد على الكيوت ذا <:2heeh:1509687414921363467> "
-            "https://tenor.com/view/magic-kaito-detective-conan-kaito-kuroba-aoko-nakamori-flower-gif-22432134"
+            "اسفين تاشيرو على ازعاجك بس اتمنى انك ترد على الكيوت ذا <:2heeh:1509687414921363467> ",
+            "https://media1.tenor.com/m/t4uPjLi-OHUAAAAd/magic-kaito-detective-conan.gif",
         ]
 
         await message.reply(
@@ -152,9 +152,9 @@ async def on_message(message):
     if message.content.strip().lower() == "نيرف":
         replies = [
             "اذ شفت رسالتك برد عليك يا كيوتن ! <a:noih10:1509687143809941515> :>",
-            "لحظات وارد عليك يا كيوتن <a:02_nekopat:1512152074262024355> <a:02_nekopat:1512152074262024355>",
-            "https://tenor.com/view/gowther-bailando-gif-24517077"
-            "https://tenor.com/view/anime-kawaii-cute-peace-sign-gowther-gif-15904328"
+            "لحظات وارد عليك يا كيوتن <a:02_nekopat:1512152074262024355>",
+            "https://media1.tenor.com/m/Cc_MrXDaqIcAAAAd/gowther-bailando.gif",
+            "https://media1.tenor.com/m/izHpHVnvDVkAAAAd/anime-kawaii.gif",
         ]
 
         await message.reply(
