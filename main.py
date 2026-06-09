@@ -137,7 +137,8 @@ async def on_message(message):
         await message.reply(embed=embed, mention_author=False)
         return
 
-    if "تاشيرو" in message.content.lower():
+
+    if message.content.strip().lower() == "تاشيرو":
         replies = [
             "اذا ما رديت عليك اعرف اني مشغول او انك غثيث !",
             "تم استدعاء تاشيرو، انتظر لين يفك الزحمة.",
@@ -149,7 +150,7 @@ async def on_message(message):
             mention_author=False
         )
 
-    if "نيرف" in message.content.lower():
+    if message.content.strip().lower() == "نيرف":
         replies = [
             "اذ شفت رسالتك برد عليك يا كيوتن ! <a:noih10:1509687143809941515> :>",
             "نيرف استلم البلاغ، انتظر الرد. <a:02_nekopat:1512152074262024355> :>",
