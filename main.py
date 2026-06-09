@@ -136,11 +136,13 @@ async def on_message(message):
 
         await message.reply(embed=embed, mention_author=False)
         return
-
     if message.content.strip().lower() == "تاشيرو":
         replies = [
             "اذا ما رديت عليك اعرف اني مشغول او انك غثيث !",
-            "اسفين تاشيرو على ازعاجك بس اتمنى انك ترد على الكيوت ذا <:2heeh:1509687414921363467> ",
+            "اسفين تاشيرو على ازعاجك بس اتمنى انك ترد على الكيوت ذا <:2heeh:1509687414921363467>",
+        ]
+
+        gifs = [
             "https://media1.tenor.com/m/t4uPjLi-OHUAAAAd/magic-kaito-detective-conan.gif",
         ]
 
@@ -149,10 +151,21 @@ async def on_message(message):
             mention_author=False
         )
 
+        if random.randint(1, 3) == 1:
+            gif_embed = discord.Embed(color=0xCE44DB)
+            gif_embed.set_image(url=random.choice(gifs))
+            await message.channel.send(embed=gif_embed)
+
+        return
+
+
     if message.content.strip().lower() == "نيرف":
         replies = [
             "اذ شفت رسالتك برد عليك يا كيوتن ! <a:noih10:1509687143809941515> :>",
             "لحظات وارد عليك يا كيوتن <a:02_nekopat:1512152074262024355>",
+        ]
+
+        gifs = [
             "https://media1.tenor.com/m/Cc_MrXDaqIcAAAAd/gowther-bailando.gif",
             "https://media1.tenor.com/m/izHpHVnvDVkAAAAd/anime-kawaii.gif",
         ]
@@ -162,27 +175,12 @@ async def on_message(message):
             mention_author=False
         )
 
-    if message.channel.id == SUGGESTION_CHANNEL_ID:
-        try:
-            await message.delete()
-        except:
-            pass
+        if random.randint(1, 3) == 1:
+            gif_embed = discord.Embed(color=0xCE44DB)
+            gif_embed.set_image(url=random.choice(gifs))
+            await message.channel.send(embed=gif_embed)
 
-        await message.channel.send(
-            f"📮 {message.author.mention} لإرسال اقتراح جديد استخدم `/اقتراح` ثم اختر نوع الاقتراح.",
-            delete_after=8
-        )
         return
-
-    completed = add_message_progress(message.author.id)
-
-    if completed:
-        await message.channel.send(
-            f"{message.author.mention} أنجزت المهمة اليومية!\n"
-            f"حصلت على {DAILY_MESSAGES_REWARD} نقطة"
-        )
-
-    await bot.process_commands(message)
 
 
 @bot.command()
