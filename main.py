@@ -147,11 +147,12 @@ async def on_message(message):
         reply_type, content = random.choice(replies)
 
         if reply_type == "text":
-            await message.channel.send(
-                f"{content}\n\n<@1044310877429575682>"
-            )
+         await message.channel.send(
+        f"{content}\n\n<@1044310877429575682>"
+    )
         else:
-            await message.channel.send(content)
+           await message.channel.send(content)
+           await message.channel.send("<@1044310877429575682>")
 
         return
 
@@ -166,11 +167,12 @@ async def on_message(message):
         reply_type, content = random.choice(replies)
 
         if reply_type == "text":
-            await message.channel.send(
-                f"{content}\n\n<@944222907385643050>"
-            )
+           await message.channel.send(
+          f"{content}\n\n<@944222907385643050>"
+    )
         else:
             await message.channel.send(content)
+            await message.channel.send("<@944222907385643050>")
 
         return
 
