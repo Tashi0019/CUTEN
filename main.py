@@ -10,6 +10,9 @@ keep_alive()
 
 SUGGESTION_CHANNEL_ID = 1506046070533128473
 DISCUSSION_CHANNEL_ID = 1508502264703090779
+TEST_CHANNEL_ID = 1514958945213747260
+DAILY_REWARD_MIN = 10
+DAILY_REWARD_MAX = 30
 POINTS_FILE = "points.json"
 DAILY_MESSAGES_GOAL = 30
 DAILY_MESSAGES_REWARD = 20
@@ -52,11 +55,14 @@ def add_message_progress(user_id):
 
     if user_id not in data:
         data[user_id] = {
-            "points": 0,
+            "coins": 0,
             "daily_messages": 0,
             "last_day": today,
             "daily_done": False
         }
+
+    if "coins" not in data[user_id]:
+        data[user_id]["coins"] = data[user_id].get("points", 0)
 
     if data[user_id]["last_day"] != today:
         data[user_id]["daily_messages"] = 0
@@ -67,13 +73,14 @@ def add_message_progress(user_id):
         data[user_id]["daily_messages"] += 1
 
         if data[user_id]["daily_messages"] >= DAILY_MESSAGES_GOAL:
-            data[user_id]["points"] += DAILY_MESSAGES_REWARD
+            reward = random.randint(DAILY_REWARD_MIN, DAILY_REWARD_MAX)
+            data[user_id]["coins"] += reward
             data[user_id]["daily_done"] = True
             save_points(data)
-            return True
+            return reward
 
     save_points(data)
-    return False
+    return 0
 
 
 @bot.event
@@ -188,13 +195,14 @@ async def on_message(message):
         )
         return
 
-    completed = add_message_progress(message.author.id)
+    if message.channel.id == TEST_CHANNEL_ID:
+        reward = add_message_progress(message.author.id)
 
-    if completed:
-        await message.channel.send(
-            f"{message.author.mention} أنجزت المهمة اليومية!\n"
-            f"حصلت على {DAILY_MESSAGES_REWARD} نقطة"
-        )
+        if reward:
+            await message.channel.send(
+                f"{message.author.mention} أنجزت المهمة اليومية!\n"
+                f"حصلت على **{reward} Cute Coin 🪙**"
+            )
 
     await bot.process_commands(message)
 
@@ -597,54 +605,79 @@ class SuggestionModal(discord.ui.Modal, title="إرسال اقتراح"):
 )
 async def اقتراح(interaction: discord.Interaction, النوع: discord.app_commands.Choice[str]):
     await interaction.response.send_modal(SuggestionModal(النوع.value))
-@bot.tree.command(name="نقاطي", description="عرض نقاطك")
-async def نقاطي(interaction: discord.Interaction):
-    data = load_points()
-    user_id = str(interaction.user.id)
+@bot.command(name="رصيدي")
+async def رصيدي(ctx):
+    if ctx.channel.id != TEST_CHANNEL_ID:
+        return
 
-    points = data.get(user_id, {}).get("points", 0)
+    data = load_points()
+    user_id = str(ctx.author.id)
+    coins = data.get(user_id, {}).get("coins", data.get(user_id, {}).get("points", 0))
+
+    embed = discord.Embed(
+        title="💰 رصيدك",
+        description=f"{ctx.author.mention}\n\nمعك **{coins} Cute Coin 🪙**",
+        color=0xCE44DB
+    )
+
+    await ctx.reply(embed=embed, mention_author=False)
+
+
+@bot.command(name="مهامي")
+async def مهامي(ctx):
+    if ctx.channel.id != TEST_CHANNEL_ID:
+        return
+
+    data = load_points()
+    user_id = str(ctx.author.id)
+
     messages = data.get(user_id, {}).get("daily_messages", 0)
     done = data.get(user_id, {}).get("daily_done", False)
 
     status = "مكتملة" if done else f"{messages}/{DAILY_MESSAGES_GOAL}"
 
-    await interaction.response.send_message(
-        f"نقاطك: **{points}**\n"
-        f"مهمة الرسائل اليومية: **{status}**",
-        ephemeral=True
+    embed = discord.Embed(
+        title="🎯 مهامك اليومية",
+        description=(
+            f"💬 **مهمة الرسائل:** {status}\n"
+            f"🎁 **المكافأة:** من {DAILY_REWARD_MIN} إلى {DAILY_REWARD_MAX} Cute Coin 🪙"
+        ),
+        color=0xCE44DB
     )
 
-
-@bot.tree.command(name="المهام", description="عرض المهام اليومية")
-async def المهام(interaction: discord.Interaction):
-    await interaction.response.send_message(
-        f"المهام اليومية:\n"
-        f"أرسل {DAILY_MESSAGES_GOAL} رسالة وخذ {DAILY_MESSAGES_REWARD} نقطة",
-        ephemeral=True
-    )
+    await ctx.reply(embed=embed, mention_author=False)
 
 
-@bot.tree.command(name="توب_النقاط", description="عرض أكثر الأعضاء نقاطًا")
-async def توب_النقاط(interaction: discord.Interaction):
+@bot.tree.command(name="توب_الكوينز", description="عرض أغنى أعضاء كيوتن")
+async def توب_الكوينز(interaction: discord.Interaction):
+    if interaction.channel.id != TEST_CHANNEL_ID:
+        return
+
     data = load_points()
 
     sorted_users = sorted(
         data.items(),
-        key=lambda item: item[1].get("points", 0),
+        key=lambda item: item[1].get("coins", item[1].get("points", 0)),
         reverse=True
     )[:10]
 
     if not sorted_users:
-        await interaction.response.send_message("ما فيه نقاط للحين.", ephemeral=True)
+        await interaction.response.send_message("ما فيه Cute Coin للحين.", ephemeral=True)
         return
 
     text = ""
+    medals = ["🥇", "🥈", "🥉"]
 
     for index, (user_id, info) in enumerate(sorted_users, start=1):
-        text += f"{index}. <@{user_id}> — **{info.get('points', 0)}** نقطة\n"
+        medal = medals[index - 1] if index <= 3 else f"`#{index}`"
+        coins = info.get("coins", info.get("points", 0))
+        text += f"{medal} <@{user_id}> — **{coins} Cute Coin 🪙**\n"
 
-    await interaction.response.send_message(
-        f"توب النقاط:\n{text}"
+    embed = discord.Embed(
+        title="🏆 أغنى أعضاء كيوتن",
+        description=text,
+        color=0xCE44DB
     )
 
+    await interaction.response.send_message(embed=embed)
 bot.run(os.getenv("TOKEN"))
