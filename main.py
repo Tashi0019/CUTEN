@@ -11,11 +11,11 @@ keep_alive()
 SUGGESTION_CHANNEL_ID = 1506046070533128473
 DISCUSSION_CHANNEL_ID = 1508502264703090779
 TEST_CHANNEL_ID = 1514958945213747260
+COIN_EMOJI = "<:cutecoin:1515057427920322682>"
 DAILY_REWARD_MIN = 10
 DAILY_REWARD_MAX = 30
 POINTS_FILE = "points.json"
 DAILY_MESSAGES_GOAL = 30
-TEST_CHANNEL_ID = 1514958945213747260
 
 DAILY_CHANNEL_ID = 1506045466238783508
 PHOTO_CHANNEL_ID = 1506045452141727754
@@ -42,6 +42,7 @@ intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 intents.presences = True
+intents.reactions = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
@@ -68,6 +69,7 @@ def save_points(data):
 def get_today():
     return datetime.now().strftime("%Y-%m-%d")
 
+
 def get_user_data(data, user_id):
     user_id = str(user_id)
     today = get_today()
@@ -87,26 +89,43 @@ def get_user_data(data, user_id):
             "completed_tasks": []
         }
 
-    if data[user_id].get("last_day") != today:
-        data[user_id]["last_day"] = today
-        data[user_id]["tasks"] = {
+    user_data = data[user_id]
+
+    if "coins" not in user_data:
+        user_data["coins"] = user_data.get("points", 0)
+
+    if "daily_gift_day" not in user_data:
+        user_data["daily_gift_day"] = ""
+
+    if "tasks" not in user_data:
+        user_data["tasks"] = {
             "messages": 0,
             "photo": False,
             "reactions": 0,
             "games": 0,
             "voice": 0
         }
-        data[user_id]["completed_tasks"] = []
 
-    if "coins" not in data[user_id]:
-        data[user_id]["coins"] = data[user_id].get("points", 0)
+    if "completed_tasks" not in user_data:
+        user_data["completed_tasks"] = []
 
-    return data[user_id]
+    if user_data.get("last_day") != today:
+        user_data["last_day"] = today
+        user_data["tasks"] = {
+            "messages": 0,
+            "photo": False,
+            "reactions": 0,
+            "games": 0,
+            "voice": 0
+        }
+        user_data["completed_tasks"] = []
+
+    return user_data
 
 
 def get_reward_range(member):
-    reward_min = 10
-    reward_max = 30
+    reward_min = DAILY_REWARD_MIN
+    reward_max = DAILY_REWARD_MAX
 
     for role in member.roles:
         if role.id in LEVEL_REWARDS:
@@ -118,7 +137,19 @@ def get_reward_range(member):
     return reward_min, reward_max
 
 
-def give_task_reward(member, task_name):
+def format_reward_message(member, task_title, reward, luck_bonus):
+    text = (
+        f"{member.mention} أنجزت مهمة {task_title}!\n"
+        f"حصلت على **{reward} Cute Coin {COIN_EMOJI}**"
+    )
+
+    if luck_bonus:
+        text += f"\n🍀 بونس حظ: **+{luck_bonus} Cute Coin {COIN_EMOJI}**"
+
+    return text
+
+
+def complete_task(member, task_name):
     data = load_points()
     user = get_user_data(data, member.id)
 
@@ -133,12 +164,97 @@ def give_task_reward(member, task_name):
     if random.randint(1, 100) <= 10:
         luck_bonus = random.randint(5, 20)
 
-    total = reward + luck_bonus
-    user["coins"] += total
+    user["coins"] += reward + luck_bonus
     user["completed_tasks"].append(task_name)
 
     save_points(data)
     return reward, luck_bonus
+
+
+def add_counter_task_progress(member, task_key, goal):
+    data = load_points()
+    user = get_user_data(data, member.id)
+
+    if task_key in user["completed_tasks"]:
+        save_points(data)
+        return 0, 0
+
+    user["tasks"][task_key] += 1
+
+    if user["tasks"][task_key] >= goal:
+        reward_min, reward_max = get_reward_range(member)
+        reward = random.randint(reward_min, reward_max)
+
+        luck_bonus = 0
+        if random.randint(1, 100) <= 10:
+            luck_bonus = random.randint(5, 20)
+
+        user["coins"] += reward + luck_bonus
+        user["completed_tasks"].append(task_key)
+
+        save_points(data)
+        return reward, luck_bonus
+
+    save_points(data)
+    return 0, 0
+
+
+def set_photo_task_done(member):
+    data = load_points()
+    user = get_user_data(data, member.id)
+
+    if "photo" in user["completed_tasks"]:
+        save_points(data)
+        return 0, 0
+
+    user["tasks"]["photo"] = True
+
+    reward_min, reward_max = get_reward_range(member)
+    reward = random.randint(reward_min, reward_max)
+
+    luck_bonus = 0
+    if random.randint(1, 100) <= 10:
+        luck_bonus = random.randint(5, 20)
+
+    user["coins"] += reward + luck_bonus
+    user["completed_tasks"].append("photo")
+
+    save_points(data)
+    return reward, luck_bonus
+
+
+SHOP_ITEMS = {
+    "لون": {
+        "name": "لون خاص لمدة أسبوع",
+        "price": 300,
+        "description": "تطلب لون مميز لاسمك لمدة أسبوع"
+    },
+    "vip": {
+        "name": "VIP لمدة أسبوع",
+        "price": 700,
+        "description": "رول VIP مؤقت لمدة أسبوع"
+    },
+    "رول": {
+        "name": "تخصيص رول",
+        "price": 500,
+        "description": "تغيير اسم أو لون رول خاص حسب المتاح"
+    },
+    "صور": {
+        "name": "صلاحية الصور",
+        "price": 1000,
+        "description": "طلب صلاحية إرسال الصور حسب قوانين السيرفر"
+    },
+    "وسام": {
+        "name": "وسام خاص",
+        "price": 1500,
+        "description": "وسام/رتبة مميزة يتم الاتفاق عليها مع الإدارة"
+    },
+    "صندوق": {
+        "name": "صندوق حظ",
+        "price": 100,
+        "description": "صندوق عشوائي ممكن يعطيك ربح أو لا شيء"
+    },
+}
 
 
 @bot.event
@@ -254,48 +370,25 @@ async def on_message(message):
         return
 
     if message.channel.id == TEST_CHANNEL_ID:
-        data = load_points()
-        user = get_user_data(data, message.author.id)
-
-        user["tasks"]["messages"] += 1
-
-        if user["tasks"]["messages"] >= DAILY_MESSAGES_GOAL:
-            reward, bonus = give_task_reward(message.author, "messages")
-            if reward:
-                text = f"{message.author.mention} أنجزت مهمة الرسائل!\nحصلت على **{reward} Cute Coin 🪙**"
-                if bonus:
-                    text += f"\n🍀 بونس حظ: **+{bonus} Cute Coin 🪙**"
-                await message.channel.send(text)
-
-        save_points(data)
+        reward, bonus = add_counter_task_progress(message.author, "messages", DAILY_MESSAGES_GOAL)
+        if reward:
+            await message.channel.send(
+                format_reward_message(message.author, "الرسائل", reward, bonus)
+            )
 
     if message.channel.id == PHOTO_CHANNEL_ID and message.attachments:
-        data = load_points()
-        user = get_user_data(data, message.author.id)
-        user["tasks"]["photo"] = True
-        save_points(data)
-
-        reward, bonus = give_task_reward(message.author, "photo")
+        reward, bonus = set_photo_task_done(message.author)
         if reward:
-            text = f"{message.author.mention} أنجزت مهمة الصور!\nحصلت على **{reward} Cute Coin 🪙**"
-            if bonus:
-                text += f"\n🍀 بونس حظ: **+{bonus} Cute Coin 🪙**"
-            await message.channel.send(text)
+            await message.channel.send(
+                format_reward_message(message.author, "الصور", reward, bonus)
+            )
 
     if message.channel.id == GAMES_CHANNEL_ID:
-        data = load_points()
-        user = get_user_data(data, message.author.id)
-        user["tasks"]["games"] += 1
-        save_points(data)
-
-        if user["tasks"]["games"] >= 5:
-            reward, bonus = give_task_reward(message.author, "games")
-            if reward:
-                text = f"{message.author.mention} أنجزت مهمة شات الألعاب!\nحصلت على **{reward} Cute Coin 🪙**"
-                if bonus:
-                    text += f"\n🍀 بونس حظ: **+{bonus} Cute Coin 🪙**"
-                await message.channel.send(text)
-                
+        reward, bonus = add_counter_task_progress(message.author, "games", 5)
+        if reward:
+            await message.channel.send(
+                format_reward_message(message.author, "شات الألعاب", reward, bonus)
+            )
 
     await bot.process_commands(message)
     
@@ -307,21 +400,19 @@ async def on_reaction_add(reaction, user):
     if reaction.message.channel.id != DAILY_CHANNEL_ID:
         return
 
-    data = load_points()
-    user_data = get_user_data(data, user.id)
-    user_data["tasks"]["reactions"] += 1
-    save_points(data)
+    guild = reaction.message.guild
+    member = guild.get_member(user.id)
 
-    if user_data["tasks"]["reactions"] >= 3:
-        guild = reaction.message.guild
-        member = guild.get_member(user.id)
+    if not member:
+        return
 
-        reward, bonus = give_task_reward(member, "reactions")
-        if reward:
-            text = f"{member.mention} أنجزت مهمة التفاعل!\nحصلت على **{reward} Cute Coin 🪙**"
-            if bonus:
-                text += f"\n🍀 بونس حظ: **+{bonus} Cute Coin 🪙**"
-            await reaction.message.channel.send(text)
+    reward, bonus = add_counter_task_progress(member, "reactions", 3)
+
+    if reward:
+        await reaction.message.channel.send(
+            format_reward_message(member, "التفاعل", reward, bonus)
+        )
+
 
 @bot.event
 async def on_voice_state_update(member, before, after):
@@ -340,15 +431,15 @@ async def on_voice_state_update(member, before, after):
         seconds = (datetime.now() - start_time).total_seconds()
 
         if seconds >= VOICE_REQUIRED_SECONDS:
-            reward, bonus = give_task_reward(member, "voice")
+            reward, bonus = complete_task(member, "voice")
 
             if reward:
                 channel = bot.get_channel(TEST_CHANNEL_ID)
                 if channel:
-                    text = f"{member.mention} أنجزت مهمة الفويس!\nحصلت على **{reward} Cute Coin 🪙**"
-                    if bonus:
-                        text += f"\n🍀 بونس حظ: **+{bonus} Cute Coin 🪙**"
-                    await channel.send(text)
+                    await channel.send(
+                        format_reward_message(member, "الفويس", reward, bonus)
+                    )
+
 
 @bot.command()
 async def sync(ctx):
@@ -754,12 +845,13 @@ async def رصيدي(ctx):
         return
 
     data = load_points()
-    user_id = str(ctx.author.id)
-    coins = data.get(user_id, {}).get("coins", data.get(user_id, {}).get("points", 0))
+    user = get_user_data(data, ctx.author.id)
+    coins = user.get("coins", 0)
+    save_points(data)
 
     embed = discord.Embed(
         title="💰 رصيدك",
-        description=f"{ctx.author.mention}\n\nمعك **{coins} Cute Coin 🪙**",
+        description=f"{ctx.author.mention}\n\nمعك **{coins} Cute Coin {COIN_EMOJI}**",
         color=0xCE44DB
     )
 
@@ -774,21 +866,133 @@ async def مهامي(ctx):
     data = load_points()
     user = get_user_data(data, ctx.author.id)
     tasks = user["tasks"]
+    completed = user["completed_tasks"]
+    save_points(data)
 
     embed = discord.Embed(
         title="🎯 مهامك اليومية",
         description=(
-            f"💬 **الرسائل:** {tasks['messages']}/{DAILY_MESSAGES_GOAL}\n"
-            f"📸 **صورة في روم الصور:** {'مكتملة' if tasks['photo'] else 'غير مكتملة'}\n"
-            f"💞 **تفاعل في اليوميات:** {tasks['reactions']}/3\n"
-            f"🎮 **شات الألعاب:** {tasks['games']}/5\n"
-            f"🎙️ **الفويس:** {'مكتملة' if 'voice' in user['completed_tasks'] else '10 دقائق'}\n\n"
-            "🎁 **المكافأة:** حسب لفلك + احتمال بونس حظ"
+            f"💬 **الرسائل:** {'مكتملة' if 'messages' in completed else f'{tasks['messages']}/{DAILY_MESSAGES_GOAL}'}\n"
+            f"📸 **صورة في روم الصور:** {'مكتملة' if 'photo' in completed else 'غير مكتملة'}\n"
+            f"💞 **تفاعل في اليوميات:** {'مكتملة' if 'reactions' in completed else f'{tasks['reactions']}/3'}\n"
+            f"🎮 **شات الألعاب:** {'مكتملة' if 'games' in completed else f'{tasks['games']}/5'}\n"
+            f"🎙️ **الفويس:** {'مكتملة' if 'voice' in completed else '10 دقائق'}\n\n"
+            f"🎁 **المكافأة:** حسب لفلك + احتمال بونس حظ\n"
+            f"{COIN_EMOJI} **العملة:** Cute Coin"
         ),
         color=0xCE44DB
     )
 
     await ctx.reply(embed=embed, mention_author=False)
+
+
+@bot.command(name="هدية")
+async def هدية(ctx):
+    if ctx.channel.id != TEST_CHANNEL_ID:
+        return
+
+    data = load_points()
+    user = get_user_data(data, ctx.author.id)
+    today = get_today()
+
+    if user.get("daily_gift_day") == today:
+        await ctx.reply("أخذت هديتك اليومية اليوم، ارجع بكرا.", mention_author=False)
+        save_points(data)
+        return
+
+    reward = random.randint(10, 60)
+
+    lucky_text = ""
+    if random.randint(1, 100) <= 8:
+        bonus = random.randint(20, 80)
+        reward += bonus
+        lucky_text = f"\n🍀 حظك رهيب! بونس إضافي **+{bonus} Cute Coin {COIN_EMOJI}**"
+
+    user["coins"] += reward
+    user["daily_gift_day"] = today
+    save_points(data)
+
+    embed = discord.Embed(
+        title="🎁 هديتك اليومية",
+        description=(
+            f"{ctx.author.mention}\n\n"
+            f"حصلت على **{reward} Cute Coin {COIN_EMOJI}**"
+            f"{lucky_text}"
+        ),
+        color=0xCE44DB
+    )
+
+    await ctx.reply(embed=embed, mention_author=False)
+
+
+@bot.command(name="متجر")
+async def متجر(ctx):
+    if ctx.channel.id != TEST_CHANNEL_ID:
+        return
+
+    text = ""
+
+    for key, item in SHOP_ITEMS.items():
+        text += (
+            f"**{key}** — {item['name']}\n"
+            f"السعر: **{item['price']} Cute Coin {COIN_EMOJI}**\n"
+            f"{item['description']}\n\n"
+        )
+
+    embed = discord.Embed(
+        title="🛒 متجر Cute Coin",
+        description=(
+            "استبدل Cute Coin بمميزات داخل السيرفر.\n\n"
+            f"{text}"
+            "للشراء اكتب:\n"
+            "`!شراء اسم_الشيء`\n\n"
+            "مثال:\n"
+            "`!شراء لون`"
+        ),
+        color=0xCE44DB
+    )
+
+    await ctx.reply(embed=embed, mention_author=False)
+
+
+@bot.command(name="شراء")
+async def شراء(ctx, item_key: str = None):
+    if ctx.channel.id != TEST_CHANNEL_ID:
+        return
+
+    if not item_key:
+        await ctx.reply("اكتب اسم الشيء اللي تبي تشتريه. مثال: `!شراء لون`", mention_author=False)
+        return
+
+    item_key = item_key.strip().lower()
+
+    if item_key not in SHOP_ITEMS:
+        await ctx.reply("هذا الشيء مو موجود بالمتجر. اكتب `!متجر` وشوف القائمة.", mention_author=False)
+        return
+
+    data = load_points()
+    user = get_user_data(data, ctx.author.id)
+    item = SHOP_ITEMS[item_key]
+
+    if user["coins"] < item["price"]:
+        await ctx.reply(
+            f"ما معك Cute Coin كفاية.\n"
+            f"سعر **{item['name']}** هو **{item['price']} Cute Coin {COIN_EMOJI}**\n"
+            f"رصيدك الحالي: **{user['coins']} Cute Coin {COIN_EMOJI}**",
+            mention_author=False
+        )
+        save_points(data)
+        return
+
+    user["coins"] -= item["price"]
+    save_points(data)
+
+    await ctx.reply(
+        f"تم شراء **{item['name']}** بنجاح!\n"
+        f"تم خصم **{item['price']} Cute Coin {COIN_EMOJI}**\n"
+        f"الإدارة بتراجع الطلب وتفعله لك.",
+        mention_author=False
+    )
 
 
 @bot.tree.command(name="توب_الكوينز", description="عرض أغنى أعضاء كيوتن")
@@ -814,7 +1018,7 @@ async def توب_الكوينز(interaction: discord.Interaction):
     for index, (user_id, info) in enumerate(sorted_users, start=1):
         medal = medals[index - 1] if index <= 3 else f"`#{index}`"
         coins = info.get("coins", info.get("points", 0))
-        text += f"{medal} <@{user_id}> — **{coins} Cute Coin 🪙**\n"
+        text += f"{medal} <@{user_id}> — **{coins} Cute Coin {COIN_EMOJI}**\n"
 
     embed = discord.Embed(
         title="🏆 أغنى أعضاء كيوتن",
@@ -823,4 +1027,5 @@ async def توب_الكوينز(interaction: discord.Interaction):
     )
 
     await interaction.response.send_message(embed=embed)
+
 bot.run(os.getenv("TOKEN"))
