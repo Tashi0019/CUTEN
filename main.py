@@ -15,7 +15,28 @@ DAILY_REWARD_MIN = 10
 DAILY_REWARD_MAX = 30
 POINTS_FILE = "points.json"
 DAILY_MESSAGES_GOAL = 30
-DAILY_MESSAGES_REWARD = 20
+TEST_CHANNEL_ID = 1514958945213747260
+
+DAILY_CHANNEL_ID = 1506045466238783508
+PHOTO_CHANNEL_ID = 1506045452141727754
+GAMES_CHANNEL_ID = 1506045433816813638
+
+VOICE_REQUIRED_SECONDS = 10 * 60
+
+LEVEL_REWARDS = {
+    1506787978029039636: (10, 30),   # لفل 5
+    1506787834428788956: (15, 35),   # لفل 10
+    1506788177195696169: (20, 40),   # لفل 15
+    1506788259542335528: (25, 45),   # لفل 20
+    1506788312835424327: (30, 50),   # لفل 25
+    1506788441571065986: (35, 55),   # لفل 30
+    1506788493161005167: (40, 60),   # لفل 35
+    1506788542196744232: (45, 70),   # لفل 40
+    1506788592490512536: (50, 80),   # لفل 45
+    1506788704264388731: (60, 100),  # لفل 50
+}
+
+voice_sessions = {}
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -47,40 +68,77 @@ def save_points(data):
 def get_today():
     return datetime.now().strftime("%Y-%m-%d")
 
-
-def add_message_progress(user_id):
-    data = load_points()
+def get_user_data(data, user_id):
     user_id = str(user_id)
     today = get_today()
 
     if user_id not in data:
         data[user_id] = {
             "coins": 0,
-            "daily_messages": 0,
             "last_day": today,
-            "daily_done": False
+            "daily_gift_day": "",
+            "tasks": {
+                "messages": 0,
+                "photo": False,
+                "reactions": 0,
+                "games": 0,
+                "voice": 0
+            },
+            "completed_tasks": []
         }
+
+    if data[user_id].get("last_day") != today:
+        data[user_id]["last_day"] = today
+        data[user_id]["tasks"] = {
+            "messages": 0,
+            "photo": False,
+            "reactions": 0,
+            "games": 0,
+            "voice": 0
+        }
+        data[user_id]["completed_tasks"] = []
 
     if "coins" not in data[user_id]:
         data[user_id]["coins"] = data[user_id].get("points", 0)
 
-    if data[user_id]["last_day"] != today:
-        data[user_id]["daily_messages"] = 0
-        data[user_id]["last_day"] = today
-        data[user_id]["daily_done"] = False
+    return data[user_id]
 
-    if not data[user_id]["daily_done"]:
-        data[user_id]["daily_messages"] += 1
 
-        if data[user_id]["daily_messages"] >= DAILY_MESSAGES_GOAL:
-            reward = random.randint(DAILY_REWARD_MIN, DAILY_REWARD_MAX)
-            data[user_id]["coins"] += reward
-            data[user_id]["daily_done"] = True
-            save_points(data)
-            return reward
+def get_reward_range(member):
+    reward_min = 10
+    reward_max = 30
+
+    for role in member.roles:
+        if role.id in LEVEL_REWARDS:
+            role_min, role_max = LEVEL_REWARDS[role.id]
+            if role_max > reward_max:
+                reward_min = role_min
+                reward_max = role_max
+
+    return reward_min, reward_max
+
+
+def give_task_reward(member, task_name):
+    data = load_points()
+    user = get_user_data(data, member.id)
+
+    if task_name in user["completed_tasks"]:
+        save_points(data)
+        return 0, 0
+
+    reward_min, reward_max = get_reward_range(member)
+    reward = random.randint(reward_min, reward_max)
+
+    luck_bonus = 0
+    if random.randint(1, 100) <= 10:
+        luck_bonus = random.randint(5, 20)
+
+    total = reward + luck_bonus
+    user["coins"] += total
+    user["completed_tasks"].append(task_name)
 
     save_points(data)
-    return 0
+    return reward, luck_bonus
 
 
 @bot.event
@@ -196,16 +254,101 @@ async def on_message(message):
         return
 
     if message.channel.id == TEST_CHANNEL_ID:
-        reward = add_message_progress(message.author.id)
+        data = load_points()
+        user = get_user_data(data, message.author.id)
 
+        user["tasks"]["messages"] += 1
+
+        if user["tasks"]["messages"] >= DAILY_MESSAGES_GOAL:
+            reward, bonus = give_task_reward(message.author, "messages")
+            if reward:
+                text = f"{message.author.mention} أنجزت مهمة الرسائل!\nحصلت على **{reward} Cute Coin 🪙**"
+                if bonus:
+                    text += f"\n🍀 بونس حظ: **+{bonus} Cute Coin 🪙**"
+                await message.channel.send(text)
+
+        save_points(data)
+
+    if message.channel.id == PHOTO_CHANNEL_ID and message.attachments:
+        data = load_points()
+        user = get_user_data(data, message.author.id)
+        user["tasks"]["photo"] = True
+        save_points(data)
+
+        reward, bonus = give_task_reward(message.author, "photo")
         if reward:
-            await message.channel.send(
-                f"{message.author.mention} أنجزت المهمة اليومية!\n"
-                f"حصلت على **{reward} Cute Coin 🪙**"
-            )
+            text = f"{message.author.mention} أنجزت مهمة الصور!\nحصلت على **{reward} Cute Coin 🪙**"
+            if bonus:
+                text += f"\n🍀 بونس حظ: **+{bonus} Cute Coin 🪙**"
+            await message.channel.send(text)
+
+    if message.channel.id == GAMES_CHANNEL_ID:
+        data = load_points()
+        user = get_user_data(data, message.author.id)
+        user["tasks"]["games"] += 1
+        save_points(data)
+
+        if user["tasks"]["games"] >= 5:
+            reward, bonus = give_task_reward(message.author, "games")
+            if reward:
+                text = f"{message.author.mention} أنجزت مهمة شات الألعاب!\nحصلت على **{reward} Cute Coin 🪙**"
+                if bonus:
+                    text += f"\n🍀 بونس حظ: **+{bonus} Cute Coin 🪙**"
+                await message.channel.send(text)
+                
 
     await bot.process_commands(message)
+    
+@bot.event
+async def on_reaction_add(reaction, user):
+    if user.bot:
+        return
 
+    if reaction.message.channel.id != DAILY_CHANNEL_ID:
+        return
+
+    data = load_points()
+    user_data = get_user_data(data, user.id)
+    user_data["tasks"]["reactions"] += 1
+    save_points(data)
+
+    if user_data["tasks"]["reactions"] >= 3:
+        guild = reaction.message.guild
+        member = guild.get_member(user.id)
+
+        reward, bonus = give_task_reward(member, "reactions")
+        if reward:
+            text = f"{member.mention} أنجزت مهمة التفاعل!\nحصلت على **{reward} Cute Coin 🪙**"
+            if bonus:
+                text += f"\n🍀 بونس حظ: **+{bonus} Cute Coin 🪙**"
+            await reaction.message.channel.send(text)
+
+@bot.event
+async def on_voice_state_update(member, before, after):
+    if member.bot:
+        return
+
+    if before.channel is None and after.channel is not None:
+        voice_sessions[member.id] = datetime.now()
+
+    if before.channel is not None and after.channel is None:
+        start_time = voice_sessions.pop(member.id, None)
+
+        if not start_time:
+            return
+
+        seconds = (datetime.now() - start_time).total_seconds()
+
+        if seconds >= VOICE_REQUIRED_SECONDS:
+            reward, bonus = give_task_reward(member, "voice")
+
+            if reward:
+                channel = bot.get_channel(TEST_CHANNEL_ID)
+                if channel:
+                    text = f"{member.mention} أنجزت مهمة الفويس!\nحصلت على **{reward} Cute Coin 🪙**"
+                    if bonus:
+                        text += f"\n🍀 بونس حظ: **+{bonus} Cute Coin 🪙**"
+                    await channel.send(text)
 
 @bot.command()
 async def sync(ctx):
@@ -629,18 +772,18 @@ async def مهامي(ctx):
         return
 
     data = load_points()
-    user_id = str(ctx.author.id)
-
-    messages = data.get(user_id, {}).get("daily_messages", 0)
-    done = data.get(user_id, {}).get("daily_done", False)
-
-    status = "مكتملة" if done else f"{messages}/{DAILY_MESSAGES_GOAL}"
+    user = get_user_data(data, ctx.author.id)
+    tasks = user["tasks"]
 
     embed = discord.Embed(
         title="🎯 مهامك اليومية",
         description=(
-            f"💬 **مهمة الرسائل:** {status}\n"
-            f"🎁 **المكافأة:** من {DAILY_REWARD_MIN} إلى {DAILY_REWARD_MAX} Cute Coin 🪙"
+            f"💬 **الرسائل:** {tasks['messages']}/{DAILY_MESSAGES_GOAL}\n"
+            f"📸 **صورة في روم الصور:** {'مكتملة' if tasks['photo'] else 'غير مكتملة'}\n"
+            f"💞 **تفاعل في اليوميات:** {tasks['reactions']}/3\n"
+            f"🎮 **شات الألعاب:** {tasks['games']}/5\n"
+            f"🎙️ **الفويس:** {'مكتملة' if 'voice' in user['completed_tasks'] else '10 دقائق'}\n\n"
+            "🎁 **المكافأة:** حسب لفلك + احتمال بونس حظ"
         ),
         color=0xCE44DB
     )
