@@ -1346,4 +1346,163 @@ async def متجر(interaction: discord.Interaction):
     embed.set_footer(text="Cuten Zone Market")
 
     await interaction.response.send_message(embed=embed, view=MainShopView())
+
+
+@bot.tree.command(name="اعطاء_كوينز", description="إعطاء Cute Coin لعضو")
+@discord.app_commands.describe(
+    العضو="العضو المراد إعطاؤه الكوينز",
+    الكمية="كمية الكوينز"
+)
+async def اعطاء_كوينز(
+    interaction: discord.Interaction,
+    العضو: discord.Member,
+    الكمية: int
+):
+
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message(
+            "❌ هذا الأمر للإدارة فقط.",
+            ephemeral=True
+        )
+        return
+
+    if الكمية <= 0:
+        await interaction.response.send_message(
+            "❌ لازم الكمية تكون أكبر من صفر.",
+            ephemeral=True
+        )
+        return
+
+    data = load_points()
+    user = get_user_data(data, العضو.id)
+
+    user["coins"] += الكمية
+
+    save_points(data)
+
+    embed = discord.Embed(
+        title="💰 تم إعطاء كوينز",
+        description=(
+            f"👤 العضو: {العضو.mention}\n"
+            f"➕ الكمية: {الكمية} {COIN_EMOJI}\n"
+            f"💳 الرصيد الجديد: {user['coins']} {COIN_EMOJI}"
+        ),
+        color=0x57F287
+    )
+
+    await interaction.response.send_message(embed=embed)
+
+
+@bot.tree.command(name="سحب_كوينز", description="سحب Cute Coin من عضو")
+@discord.app_commands.describe(
+    العضو="العضو المراد السحب منه",
+    الكمية="كمية الكوينز"
+)
+async def سحب_كوينز(
+    interaction: discord.Interaction,
+    العضو: discord.Member,
+    الكمية: int
+):
+
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message(
+            "❌ هذا الأمر للإدارة فقط.",
+            ephemeral=True
+        )
+        return
+
+    if الكمية <= 0:
+        await interaction.response.send_message(
+            "❌ لازم الكمية تكون أكبر من صفر.",
+            ephemeral=True
+        )
+        return
+
+    data = load_points()
+    user = get_user_data(data, العضو.id)
+
+    if user["coins"] < الكمية:
+        await interaction.response.send_message(
+            f"❌ رصيد العضو ما يكفي.\nرصيده الحالي: **{user['coins']} {COIN_EMOJI}**",
+            ephemeral=True
+        )
+        return
+
+    user["coins"] -= الكمية
+    save_points(data)
+
+    embed = discord.Embed(
+        title="💸 تم سحب كوينز",
+        description=(
+            f"👤 العضو: {العضو.mention}\n"
+            f"➖ الكمية: {الكمية} {COIN_EMOJI}\n"
+            f"💳 الرصيد الجديد: {user['coins']} {COIN_EMOJI}"
+        ),
+        color=0xED4245
+    )
+
+    await interaction.response.send_message(embed=embed)
+
+
+@bot.tree.command(name="تحويل", description="تحويل Cute Coin لعضو آخر")
+@discord.app_commands.describe(
+    العضو="العضو اللي تبي تحول له",
+    الكمية="كمية الكوينز"
+)
+async def تحويل(
+    interaction: discord.Interaction,
+    العضو: discord.Member,
+    الكمية: int
+):
+
+    if interaction.channel.id != TEST_CHANNEL_ID:
+        return
+
+    if العضو.bot:
+        await interaction.response.send_message(
+            "❌ ما تقدر تحول لبوت.",
+            ephemeral=True
+        )
+        return
+
+    if العضو.id == interaction.user.id:
+        await interaction.response.send_message(
+            "❌ ما تقدر تحول لنفسك.",
+            ephemeral=True
+        )
+        return
+
+    if الكمية <= 0:
+        await interaction.response.send_message(
+            "❌ لازم الكمية تكون أكبر من صفر.",
+            ephemeral=True
+        )
+        return
+
+    data = load_points()
+    sender = get_user_data(data, interaction.user.id)
+    receiver = get_user_data(data, العضو.id)
+
+    if sender["coins"] < الكمية:
+        await interaction.response.send_message(
+            f"❌ رصيدك ما يكفي.\nرصيدك الحالي: **{sender['coins']} {COIN_EMOJI}**",
+            ephemeral=True
+        )
+        return
+
+    sender["coins"] -= الكمية
+    receiver["coins"] += الكمية
+    save_points(data)
+
+    embed = discord.Embed(
+        title="💸 تحويل Cute Coin",
+        description=(
+            f"✅ تم تحويل **{الكمية} {COIN_EMOJI}**\n\n"
+            f"من: {interaction.user.mention}\n"
+            f"إلى: {العضو.mention}"
+        ),
+        color=0xCE44DB
+    )
+
+    await interaction.response.send_message(embed=embed)
 bot.run(os.getenv("TOKEN"))
