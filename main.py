@@ -11,6 +11,7 @@ keep_alive()
 SUGGESTION_CHANNEL_ID = 1506046070533128473
 DISCUSSION_CHANNEL_ID = 1508502264703090779
 TEST_CHANNEL_ID = 1514958945213747260
+SHOP_REQUESTS_CHANNEL_ID = 1515147902140547113
 COIN_EMOJI = "<:cutecoin:1515057427920322682>"
 DAILY_REWARD_MIN = 10
 DAILY_REWARD_MAX = 30
@@ -1027,5 +1028,224 @@ async def توب_الكوينز(interaction: discord.Interaction):
     )
 
     await interaction.response.send_message(embed=embed)
+SHOP_ITEMS = {
+    "vip_week": {
+        "name": "👑 رتبة VIP (أسبوع)",
+        "price": 5000,
+        "desc": "احصل على مميزات الـ VIP لمدة أسبوع كامل"
+    },
+    "level_5": {
+        "name": "🔼 5 لفلات إضافية",
+        "price": 3500,
+        "desc": "يزيدك 5 لفلات إضافية"
+    },
+    "level_3": {
+        "name": "🔼 3 لفلات إضافية",
+        "price": 2500,
+        "desc": "يزيدك 3 لفلات إضافية"
+    },
+    "level_1": {
+        "name": "🔼 لفل واحد إضافي",
+        "price": 1500,
+        "desc": "يزيدك لفل واحد إضافي"
+    },
+    "gamble": {
+        "name": "🎲 تصيب أو تخيب",
+        "price": 200,
+        "desc": "ممكن تكسب أضعافها وممكن تخسرها"
+    }
+}
 
+
+class ConfirmPurchaseView(discord.ui.View):
+    def __init__(self, user_id, item_key):
+        super().__init__(timeout=60)
+        self.user_id = user_id
+        self.item_key = item_key
+
+    @discord.ui.button(label="تأكيد الشراء", emoji="✅", style=discord.ButtonStyle.success)
+    async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("هذا الطلب مو لك.", ephemeral=True)
+            return
+
+        data = load_points()
+        user = get_user_data(data, interaction.user.id)
+        item = SHOP_ITEMS[self.item_key]
+        price = item["price"]
+
+        if user["coins"] < price:
+            await interaction.response.edit_message(
+                content=f"❌ رصيدك ما يكفي.\nمعك **{user['coins']} {COIN_EMOJI}**",
+                embed=None,
+                view=None
+            )
+            return
+
+        user["coins"] -= price
+
+        if self.item_key == "gamble":
+            result = random.choice(["lose", "win", "jackpot"])
+
+            if result == "lose":
+                reward = 0
+                result_text = "❌ خسرت وما رجع لك شيء."
+            elif result == "win":
+                reward = random.randint(300, 600)
+                user["coins"] += reward
+                result_text = f"✅ ربحت **{reward} {COIN_EMOJI}**"
+            else:
+                reward = random.randint(800, 1200)
+                user["coins"] += reward
+                result_text = f"🔥 جاك جاكبوت! ربحت **{reward} {COIN_EMOJI}**"
+
+            save_points(data)
+
+            await interaction.response.edit_message(
+                content=(
+                    f"🎲 **تصيب أو تخيب**\n\n"
+                    f"{result_text}\n"
+                    f"رصيدك الآن: **{user['coins']} {COIN_EMOJI}**"
+                ),
+                embed=None,
+                view=None
+            )
+            return
+
+        save_points(data)
+
+        request_channel = interaction.guild.get_channel(SHOP_REQUESTS_CHANNEL_ID)
+
+        if request_channel:
+            embed = discord.Embed(
+                title="🛒 طلب شراء جديد",
+                description=(
+                    f"👤 **العضو:** {interaction.user.mention}\n\n"
+                    f"📦 **المنتج:** {item['name']}\n"
+                    f"💰 **السعر:** {price} {COIN_EMOJI}\n"
+                    f"💳 **الرصيد بعد الشراء:** {user['coins']} {COIN_EMOJI}"
+                ),
+                color=0xCE44DB
+            )
+            await request_channel.send(embed=embed)
+
+        await interaction.response.edit_message(
+            content="✅ تم إرسال طلبك للإدارة، انتظر التسليم.",
+            embed=None,
+            view=None
+        )
+
+    @discord.ui.button(label="إلغاء", emoji="❌", style=discord.ButtonStyle.danger)
+    async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("هذا الطلب مو لك.", ephemeral=True)
+            return
+
+        await interaction.response.edit_message(
+            content="تم إلغاء عملية الشراء.",
+            embed=None,
+            view=None
+        )
+
+
+class ShopSelect(discord.ui.Select):
+    def __init__(self):
+        options = []
+
+        for key, item in SHOP_ITEMS.items():
+            options.append(
+                discord.SelectOption(
+                    label=f"{item['name']} - {item['price']} Coins",
+                    description=item["desc"],
+                    value=key
+                )
+            )
+
+        super().__init__(
+            placeholder="🛒 اختر عنصر من المتجر العام",
+            options=options
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        item_key = self.values[0]
+        item = SHOP_ITEMS[item_key]
+
+        data = load_points()
+        user = get_user_data(data, interaction.user.id)
+        balance = user["coins"]
+        after = balance - item["price"]
+
+        if balance < item["price"]:
+            after_text = "رصيدك لا يكفي"
+        else:
+            after_text = f"{after} {COIN_EMOJI}"
+
+        embed = discord.Embed(
+            title="🛒 تأكيد الشراء",
+            description=(
+                f"📦 **المنتج:** {item['name']}\n"
+                f"📝 **الوصف:** {item['desc']}\n\n"
+                f"💰 **السعر:** {item['price']} {COIN_EMOJI}\n"
+                f"💳 **رصيدك الحالي:** {balance} {COIN_EMOJI}\n"
+                f"📉 **رصيدك بعد الشراء:** {after_text}"
+            ),
+            color=0xCE44DB
+        )
+
+        await interaction.response.send_message(
+            embed=embed,
+            view=ConfirmPurchaseView(interaction.user.id, item_key),
+            ephemeral=True
+        )
+
+
+class ShopView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+        self.add_item(ShopSelect())
+
+
+class MainShopView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="المتجر", emoji="🛒", style=discord.ButtonStyle.primary)
+    async def shop_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        embed = discord.Embed(
+            title="🛒 متجر Cute Coin",
+            description=(
+                f"استبدل {COIN_EMOJI} **Cute Coin** بمميزات حصرية داخل السيرفر!\n\n"
+                f"👑 **رتبة VIP (أسبوع)** - 5000 {COIN_EMOJI}\n"
+                f"🔼 **5 لفلات إضافية** - 3500 {COIN_EMOJI}\n"
+                f"🔼 **3 لفلات إضافية** - 2500 {COIN_EMOJI}\n"
+                f"🔼 **لفل واحد إضافي** - 1500 {COIN_EMOJI}\n"
+                f"🎲 **تصيب أو تخيب** - 200 {COIN_EMOJI}"
+            ),
+            color=0xCE44DB
+        )
+
+        await interaction.response.send_message(
+            embed=embed,
+            view=ShopView(),
+            ephemeral=True
+        )
+
+
+@bot.command(name="لوحة_المتجر")
+async def لوحة_المتجر(ctx):
+    if ctx.channel.id != TEST_CHANNEL_ID:
+        return
+
+    embed = discord.Embed(
+        title="🛒 متجر Cute Coin",
+        description=(
+            f"استبدل {COIN_EMOJI} **Cute Coin** بمميزات حصرية داخل كيوتن!\n\n"
+            "اضغط زر المتجر بالأسفل لعرض المنتجات."
+        ),
+        color=0xCE44DB
+    )
+
+    embed.set_footer(text="Cuten Cute Coin Shop")
+
+    await ctx.send(embed=embed, view=MainShopView())
 bot.run(os.getenv("TOKEN"))
