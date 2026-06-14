@@ -11,7 +11,7 @@ keep_alive()
 SUGGESTION_CHANNEL_ID = 1506046070533128473
 DISCUSSION_CHANNEL_ID = 1508502264703090779
 TEST_CHANNEL_ID = 1514958945213747260
-COMMANDS_CHANNEL_ID = 1506045404322730195
+COMMANDS_CHANNEL_ID = 1515796308818923756
 SHOP_REQUESTS_CHANNEL_ID = 1515147902140547113
 COIN_EMOJI = "<:cutecoin:1515057427920322682>"
 DAILY_REWARD_MIN = 10
@@ -340,9 +340,11 @@ async def on_message(message):
     if message.channel.id == DAILY_CHANNEL_ID:
         reward, bonus = add_counter_task_progress(message.author, "reactions", 3)
         if reward:
-            await message.channel.send(
-                format_reward_message(message.author, "اليوميات", reward, bonus)
-            )
+            channel = bot.get_channel(COMMANDS_CHANNEL_ID)
+            if channel:
+                await channel.send(
+                    format_reward_message(message.author, "اليوميات", reward, bonus)
+                )
 
     reward, bonus = add_counter_task_progress(message.author, "messages", DAILY_MESSAGES_GOAL)
     if reward:
@@ -353,16 +355,20 @@ async def on_message(message):
     if message.channel.id == PHOTO_CHANNEL_ID and message.attachments:
         reward, bonus = set_photo_task_done(message.author)
         if reward:
-            await message.channel.send(
-                format_reward_message(message.author, "الصور", reward, bonus)
-            )
+            channel = bot.get_channel(COMMANDS_CHANNEL_ID)
+            if channel:
+                await channel.send(
+                    format_reward_message(message.author, "الصور", reward, bonus)
+                )
 
     if message.channel.id == GAMES_CHANNEL_ID:
         reward, bonus = add_counter_task_progress(message.author, "games", 5)
         if reward:
-            await message.channel.send(
-                format_reward_message(message.author, "شات الألعاب", reward, bonus)
-            )
+            channel = bot.get_channel(COMMANDS_CHANNEL_ID)
+            if channel:
+                await channel.send(
+                    format_reward_message(message.author, "شات الألعاب", reward, bonus)
+                )
 
     await bot.process_commands(message)
     
