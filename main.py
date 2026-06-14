@@ -11,6 +11,7 @@ keep_alive()
 SUGGESTION_CHANNEL_ID = 1506046070533128473
 DISCUSSION_CHANNEL_ID = 1508502264703090779
 TEST_CHANNEL_ID = 1514958945213747260
+COMMANDS_CHANNEL_ID = 1506045404322730195
 SHOP_REQUESTS_CHANNEL_ID = 1515147902140547113
 COIN_EMOJI = "<:cutecoin:1515057427920322682>"
 DAILY_REWARD_MIN = 10
@@ -224,40 +225,6 @@ def set_photo_task_done(member):
     return reward, luck_bonus
 
 
-SHOP_ITEMS = {
-    "لون": {
-        "name": "لون خاص لمدة أسبوع",
-        "price": 300,
-        "description": "تطلب لون مميز لاسمك لمدة أسبوع"
-    },
-    "vip": {
-        "name": "VIP لمدة أسبوع",
-        "price": 700,
-        "description": "رول VIP مؤقت لمدة أسبوع"
-    },
-    "رول": {
-        "name": "تخصيص رول",
-        "price": 500,
-        "description": "تغيير اسم أو لون رول خاص حسب المتاح"
-    },
-    "صور": {
-        "name": "صلاحية الصور",
-        "price": 1000,
-        "description": "طلب صلاحية إرسال الصور حسب قوانين السيرفر"
-    },
-    "وسام": {
-        "name": "وسام خاص",
-        "price": 1500,
-        "description": "وسام/رتبة مميزة يتم الاتفاق عليها مع الإدارة"
-    },
-    "صندوق": {
-        "name": "صندوق حظ",
-        "price": 100,
-        "description": "صندوق عشوائي ممكن يعطيك ربح أو لا شيء"
-    },
-}
-
-
 @bot.event
 async def on_message(message):
     if message.author.bot:
@@ -370,12 +337,18 @@ async def on_message(message):
         )
         return
 
-    if message.channel.id == TEST_CHANNEL_ID:
-        reward, bonus = add_counter_task_progress(message.author, "messages", DAILY_MESSAGES_GOAL)
+    if message.channel.id == DAILY_CHANNEL_ID:
+        reward, bonus = add_counter_task_progress(message.author, "reactions", 3)
         if reward:
             await message.channel.send(
-                format_reward_message(message.author, "الرسائل", reward, bonus)
+                format_reward_message(message.author, "اليوميات", reward, bonus)
             )
+
+    reward, bonus = add_counter_task_progress(message.author, "messages", DAILY_MESSAGES_GOAL)
+    if reward:
+        await message.channel.send(
+            format_reward_message(message.author, "الرسائل", reward, bonus)
+        )
 
     if message.channel.id == PHOTO_CHANNEL_ID and message.attachments:
         reward, bonus = set_photo_task_done(message.author)
@@ -435,7 +408,7 @@ async def on_voice_state_update(member, before, after):
             reward, bonus = complete_task(member, "voice")
 
             if reward:
-                channel = bot.get_channel(TEST_CHANNEL_ID)
+                channel = bot.get_channel(COMMANDS_CHANNEL_ID)
                 if channel:
                     await channel.send(
                         format_reward_message(member, "الفويس", reward, bonus)
@@ -842,9 +815,6 @@ async def اقتراح(interaction: discord.Interaction, النوع: discord.app
     await interaction.response.send_modal(SuggestionModal(النوع.value))
 @bot.command(name="رصيدي")
 async def رصيدي(ctx):
-    if ctx.channel.id != TEST_CHANNEL_ID:
-        return
-
     data = load_points()
     user = get_user_data(data, ctx.author.id)
     coins = user.get("coins", 0)
@@ -861,23 +831,26 @@ async def رصيدي(ctx):
 
 @bot.command(name="مهامي")
 async def مهامي(ctx):
-    if ctx.channel.id != TEST_CHANNEL_ID:
-        return
-
     data = load_points()
     user = get_user_data(data, ctx.author.id)
     tasks = user["tasks"]
     completed = user["completed_tasks"]
     save_points(data)
 
+    messages_status = "مكتملة" if "messages" in completed else f"{tasks['messages']}/{DAILY_MESSAGES_GOAL}"
+    photo_status = "مكتملة" if "photo" in completed else "غير مكتملة"
+    daily_status = "مكتملة" if "reactions" in completed else f"{tasks['reactions']}/3"
+    games_status = "مكتملة" if "games" in completed else f"{tasks['games']}/5"
+    voice_status = "مكتملة" if "voice" in completed else "10 دقائق"
+
     embed = discord.Embed(
         title="🎯 مهامك اليومية",
         description=(
-            f"💬 **الرسائل:** {'مكتملة' if 'messages' in completed else f'{tasks['messages']}/{DAILY_MESSAGES_GOAL}'}\n"
-            f"📸 **صورة في روم الصور:** {'مكتملة' if 'photo' in completed else 'غير مكتملة'}\n"
-            f"💞 **تفاعل في اليوميات:** {'مكتملة' if 'reactions' in completed else f'{tasks['reactions']}/3'}\n"
-            f"🎮 **شات الألعاب:** {'مكتملة' if 'games' in completed else f'{tasks['games']}/5'}\n"
-            f"🎙️ **الفويس:** {'مكتملة' if 'voice' in completed else '10 دقائق'}\n\n"
+            f"💬 **الرسائل:** {messages_status}\n"
+            f"📸 **صورة في روم الصور:** {photo_status}\n"
+            f"💞 **تفاعل في اليوميات:** {daily_status}\n"
+            f"🎮 **شات الألعاب:** {games_status}\n"
+            f"🎙️ **الفويس:** {voice_status}\n\n"
             f"🎁 **المكافأة:** حسب لفلك + احتمال بونس حظ\n"
             f"{COIN_EMOJI} **العملة:** Cute Coin"
         ),
@@ -886,12 +859,8 @@ async def مهامي(ctx):
 
     await ctx.reply(embed=embed, mention_author=False)
 
-
 @bot.command(name="هدية")
 async def هدية(ctx):
-    if ctx.channel.id != TEST_CHANNEL_ID:
-        return
-
     data = load_points()
     user = get_user_data(data, ctx.author.id)
     today = get_today()
@@ -926,108 +895,33 @@ async def هدية(ctx):
     await ctx.reply(embed=embed, mention_author=False)
 
 
-@bot.command(name="متجر")
-async def متجر(ctx):
-    if ctx.channel.id != TEST_CHANNEL_ID:
-        return
 
-    text = ""
-
-    for key, item in SHOP_ITEMS.items():
-        text += (
-            f"**{key}** — {item['name']}\n"
-            f"السعر: **{item['price']} Cute Coin {COIN_EMOJI}**\n"
-            f"{item['description']}\n\n"
-        )
-
+@bot.command(name="أوامر")
+async def اوامر(ctx):
     embed = discord.Embed(
-        title="🛒 متجر Cute Coin",
+        title="📜 أوامر Cute Coin",
         description=(
-            "استبدل Cute Coin بمميزات داخل السيرفر.\n\n"
-            f"{text}"
-            "للشراء اكتب:\n"
-            "`!شراء اسم_الشيء`\n\n"
-            "مثال:\n"
-            "`!شراء لون`"
+            f"{COIN_EMOJI} **أوامر الأعضاء**\n"
+            "`!رصيدي` — يعرض رصيدك من Cute Coin\n"
+            "`!مهامي` — يعرض مهامك اليومية\n"
+            "`!هدية` — تستلم هديتك اليومية\n"
+            "`/تحويل` — تحول Cute Coin لعضو آخر\n"
+            "`/توب_الكوينز` — يعرض أغنى الأعضاء\n\n"
+            "🛒 **المتجر**\n"
+            "تقدر تشتري من لوحة المتجر بالأزرار بعد ما ترسلها الإدارة.\n\n"
+            "🎯 **المهام اليومية**\n"
+            "💬 30 رسالة بأي شات\n"
+            "📸 صورة في روم الصور\n"
+            "💞 3 مشاركات/تفاعلات في اليوميات\n"
+            "🎮 5 رسائل في شات الألعاب\n"
+            "🎙️ 10 دقائق في الفويس"
         ),
         color=0xCE44DB
     )
-
+    embed.set_footer(text="Cuten Cute Coin System")
     await ctx.reply(embed=embed, mention_author=False)
 
 
-@bot.command(name="شراء")
-async def شراء(ctx, item_key: str = None):
-    if ctx.channel.id != TEST_CHANNEL_ID:
-        return
-
-    if not item_key:
-        await ctx.reply("اكتب اسم الشيء اللي تبي تشتريه. مثال: `!شراء لون`", mention_author=False)
-        return
-
-    item_key = item_key.strip().lower()
-
-    if item_key not in SHOP_ITEMS:
-        await ctx.reply("هذا الشيء مو موجود بالمتجر. اكتب `!متجر` وشوف القائمة.", mention_author=False)
-        return
-
-    data = load_points()
-    user = get_user_data(data, ctx.author.id)
-    item = SHOP_ITEMS[item_key]
-
-    if user["coins"] < item["price"]:
-        await ctx.reply(
-            f"ما معك Cute Coin كفاية.\n"
-            f"سعر **{item['name']}** هو **{item['price']} Cute Coin {COIN_EMOJI}**\n"
-            f"رصيدك الحالي: **{user['coins']} Cute Coin {COIN_EMOJI}**",
-            mention_author=False
-        )
-        save_points(data)
-        return
-
-    user["coins"] -= item["price"]
-    save_points(data)
-
-    await ctx.reply(
-        f"تم شراء **{item['name']}** بنجاح!\n"
-        f"تم خصم **{item['price']} Cute Coin {COIN_EMOJI}**\n"
-        f"الإدارة بتراجع الطلب وتفعله لك.",
-        mention_author=False
-    )
-
-
-@bot.tree.command(name="توب_الكوينز", description="عرض أغنى أعضاء كيوتن")
-async def توب_الكوينز(interaction: discord.Interaction):
-    if interaction.channel.id != TEST_CHANNEL_ID:
-        return
-
-    data = load_points()
-
-    sorted_users = sorted(
-        data.items(),
-        key=lambda item: item[1].get("coins", item[1].get("points", 0)),
-        reverse=True
-    )[:10]
-
-    if not sorted_users:
-        await interaction.response.send_message("ما فيه Cute Coin للحين.", ephemeral=True)
-        return
-
-    text = ""
-    medals = ["🥇", "🥈", "🥉"]
-
-    for index, (user_id, info) in enumerate(sorted_users, start=1):
-        medal = medals[index - 1] if index <= 3 else f"`#{index}`"
-        coins = info.get("coins", info.get("points", 0))
-        text += f"{medal} <@{user_id}> — **{coins} Cute Coin {COIN_EMOJI}**\n"
-
-    embed = discord.Embed(
-        title="🏆 أغنى أعضاء كيوتن",
-        description=text,
-        color=0xCE44DB
-    )
-
-    await interaction.response.send_message(embed=embed)
 SHOP_REQUESTS_CHANNEL_ID = 1508502264703090779
 COIN_EMOJI = "<:cutecoin:1515057427920322682>"
 SHOP_IMAGE_URL = "https://i.imgur.com/WdTt5xZ.png"
@@ -1454,9 +1348,6 @@ async def تحويل(
     العضو: discord.Member,
     الكمية: int
 ):
-
-    if interaction.channel.id != TEST_CHANNEL_ID:
-        return
 
     if العضو.bot:
         await interaction.response.send_message(
