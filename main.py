@@ -1397,42 +1397,58 @@ async def تحويل(
     )
 
     await interaction.response.send_message(embed=embed)
-
 @bot.tree.command(name="توب_الكوينز", description="عرض أغنى أعضاء السيرفر")
 async def توب_الكوينز(interaction: discord.Interaction):
 
     data = load_points()
 
-    if not data:
-        await interaction.response.send_message(
-            "لا يوجد بيانات حالياً.",
-            ephemeral=True
-        )
-        return
-
     members_data = []
 
     for user_id, user_data in data.items():
-        coins = user_data.get("coins", 0)
-
         member = interaction.guild.get_member(int(user_id))
 
         if member:
-            members_data.append((member, coins))
+            members_data.append(
+                (member, user_data.get("coins", 0))
+            )
 
     members_data.sort(key=lambda x: x[1], reverse=True)
 
     embed = discord.Embed(
-        title=f"🏆 أغنى أعضاء {interaction.guild.name}",
-        color=0xFFD700
+        title="🏆 لوحة أثرياء كيوتن",
+        description="أغنى أعضاء السيرفر حالياً 💰",
+        color=0xCE44DB
     )
 
-    for index, (member, coins) in enumerate(members_data[:10], start=1):
-        embed.add_field(
-            name=f"#{index} | {member.display_name}",
-            value=f"{coins} {COIN_EMOJI}",
-            inline=False
+    medals = ["🥇", "🥈", "🥉"]
+
+    text = ""
+
+    for i, (member, coins) in enumerate(members_data[:10]):
+
+        if i < 3:
+            rank = medals[i]
+        else:
+            rank = f"`#{i+1}`"
+
+        text += (
+            f"{rank} {member.mention}\n"
+            f"**{coins:,}** {COIN_EMOJI}\n\n"
         )
 
+    if not text:
+        text = "لا يوجد بيانات."
+
+    embed.add_field(
+        name="📊 الترتيب",
+        value=text,
+        inline=False
+    )
+
+    embed.set_footer(
+        text=f"عدد الأعضاء المصنفين: {len(members_data)}"
+    )
+
     await interaction.response.send_message(embed=embed)
+
 bot.run(os.getenv("TOKEN"))
