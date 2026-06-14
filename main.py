@@ -915,7 +915,7 @@ async def اوامر(ctx):
             "`/توب_الكوينز` — يعرض أغنى الأعضاء\n\n"
             "🛒 **المتجر**\n"
             "تقدر تشتري من لوحة المتجر بالأزرار بعد ما ترسلها الإدارة.\n\n"
-            
+
         ),
         color=0xCE44DB
     )
@@ -1395,6 +1395,44 @@ async def تحويل(
         ),
         color=0xCE44DB
     )
+
+    await interaction.response.send_message(embed=embed)
+
+@bot.tree.command(name="توب_الكوينز", description="عرض أغنى أعضاء السيرفر")
+async def توب_الكوينز(interaction: discord.Interaction):
+
+    data = load_points()
+
+    if not data:
+        await interaction.response.send_message(
+            "لا يوجد بيانات حالياً.",
+            ephemeral=True
+        )
+        return
+
+    members_data = []
+
+    for user_id, user_data in data.items():
+        coins = user_data.get("coins", 0)
+
+        member = interaction.guild.get_member(int(user_id))
+
+        if member:
+            members_data.append((member, coins))
+
+    members_data.sort(key=lambda x: x[1], reverse=True)
+
+    embed = discord.Embed(
+        title=f"🏆 أغنى أعضاء {interaction.guild.name}",
+        color=0xFFD700
+    )
+
+    for index, (member, coins) in enumerate(members_data[:10], start=1):
+        embed.add_field(
+            name=f"#{index} | {member.display_name}",
+            value=f"{coins} {COIN_EMOJI}",
+            inline=False
+        )
 
     await interaction.response.send_message(embed=embed)
 bot.run(os.getenv("TOKEN"))
