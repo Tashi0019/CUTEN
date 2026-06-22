@@ -11,9 +11,10 @@ keep_alive()
 SUGGESTION_CHANNEL_ID = 1506046070533128473
 DISCUSSION_CHANNEL_ID = 1508502264703090779
 TEST_CHANNEL_ID = 1514958945213747260
-COMMANDS_CHANNEL_ID = 1515796308818923756
+NOTIFY_CHANNEL_ID = 1515796308818923756
 SHOP_REQUESTS_CHANNEL_ID = 1515147902140547113
 COIN_EMOJI = "<:cutecoin:1515057427920322682>"
+COMMANDS_CHANNEL_ID = 1506045404322730195
 DAILY_REWARD_MIN = 10
 DAILY_REWARD_MAX = 30
 POINTS_FILE = "points.json"
@@ -53,6 +54,37 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 async def on_ready():
     await bot.tree.sync()
     print(f"Logged on as {bot.user}!")
+
+
+@bot.check
+async def commands_channel_only(ctx):
+    """الأعضاء يستخدمون أوامر ! في شات الأوامر فقط، والإدارة تقدر تستخدمها بأي مكان."""
+    if ctx.author.guild_permissions.administrator:
+        return True
+
+    if ctx.channel.id != COMMANDS_CHANNEL_ID:
+        try:
+            await ctx.reply(
+                f"❌ استخدم أوامر البوت في <#{COMMANDS_CHANNEL_ID}>.",
+                delete_after=5,
+                mention_author=False
+            )
+        except discord.HTTPException:
+            pass
+        return False
+
+    return True
+
+
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.CommandNotFound):
+        return
+
+    if isinstance(error, commands.CheckFailure):
+        return
+
+    raise error
 
 
 def load_points():
@@ -149,6 +181,38 @@ def format_reward_message(member, task_title, reward, luck_bonus):
         text += f"\n🍀 بونس حظ: **+{luck_bonus} Cute Coin {COIN_EMOJI}**"
 
     return text
+
+
+async def send_task_notification(guild, member, task_title, reward, luck_bonus):
+    """يرسل إشعار إنجاز المهمة في روم الإشعارات فقط."""
+    if not guild:
+        return
+
+    channel = guild.get_channel(NOTIFY_CHANNEL_ID) or bot.get_channel(NOTIFY_CHANNEL_ID)
+
+    if not channel:
+        return
+
+    try:
+        await channel.send(format_reward_message(member, task_title, reward, luck_bonus))
+    except discord.HTTPException:
+        # لو ديسكورد عطانا Rate Limit لا نخلي البوت يطيح
+        pass
+
+
+async def require_commands_channel_interaction(interaction: discord.Interaction):
+    """الأعضاء يستخدمون أوامر السلاش في شات الأوامر فقط، والإدارة تقدر تستخدمها بأي مكان."""
+    if interaction.user.guild_permissions.administrator:
+        return True
+
+    if interaction.channel and interaction.channel.id != COMMANDS_CHANNEL_ID:
+        await interaction.response.send_message(
+            f"❌ استخدم هذا الأمر في <#{COMMANDS_CHANNEL_ID}>.",
+            ephemeral=True
+        )
+        return False
+
+    return True
 
 
 def complete_task(member, task_name):
@@ -340,35 +404,20 @@ async def on_message(message):
     if message.channel.id == DAILY_CHANNEL_ID:
         reward, bonus = add_counter_task_progress(message.author, "reactions", 3)
         if reward:
-            channel = bot.get_channel(COMMANDS_CHANNEL_ID)
-            if channel:
-                await channel.send(
-                    format_reward_message(message.author, "اليوميات", reward, bonus)
-                )
+            await send_task_notification(message.guild, message.author, "اليوميات", reward, bonus)
 
     reward, bonus = add_counter_task_progress(message.author, "messages", DAILY_MESSAGES_GOAL)
     if reward:
-        await message.channel.send(
-            format_reward_message(message.author, "الرسائل", reward, bonus)
-        )
-
+        await send_task_notification(message.guild, message.author, "الرسائل", reward, bonus)
     if message.channel.id == PHOTO_CHANNEL_ID and message.attachments:
         reward, bonus = set_photo_task_done(message.author)
         if reward:
-            channel = bot.get_channel(COMMANDS_CHANNEL_ID)
-            if channel:
-                await channel.send(
-                    format_reward_message(message.author, "الصور", reward, bonus)
-                )
+            await send_task_notification(message.guild, message.author, "الصور", reward, bonus)
 
     if message.channel.id == GAMES_CHANNEL_ID:
         reward, bonus = add_counter_task_progress(message.author, "games", 5)
         if reward:
-            channel = bot.get_channel(COMMANDS_CHANNEL_ID)
-            if channel:
-                await channel.send(
-                    format_reward_message(message.author, "شات الألعاب", reward, bonus)
-                )
+            await send_task_notification(message.guild, message.author, "شات الألعاب", reward, bonus)
 
     await bot.process_commands(message)
     
@@ -389,9 +438,7 @@ async def on_reaction_add(reaction, user):
     reward, bonus = add_counter_task_progress(member, "reactions", 3)
 
     if reward:
-        await reaction.message.channel.send(
-            format_reward_message(member, "التفاعل", reward, bonus)
-        )
+        await send_task_notification(guild, member, "التفاعل", reward, bonus)
 
 
 @bot.event
@@ -414,11 +461,7 @@ async def on_voice_state_update(member, before, after):
             reward, bonus = complete_task(member, "voice")
 
             if reward:
-                channel = bot.get_channel(COMMANDS_CHANNEL_ID)
-                if channel:
-                    await channel.send(
-                        format_reward_message(member, "الفويس", reward, bonus)
-                    )
+                await send_task_notification(member.guild, member, "الفويس", reward, bonus)
 
 
 @bot.command()
@@ -818,6 +861,9 @@ class SuggestionModal(discord.ui.Modal, title="إرسال اقتراح"):
     ]
 )
 async def اقتراح(interaction: discord.Interaction, النوع: discord.app_commands.Choice[str]):
+    if not await require_commands_channel_interaction(interaction):
+        return
+
     await interaction.response.send_modal(SuggestionModal(النوع.value))
 @bot.command(name="رصيدي")
 async def رصيدي(ctx):
@@ -913,6 +959,9 @@ async def اوامر(ctx):
             "`!هدية` — تستلم هديتك اليومية\n"
             "`/تحويل` — تحول Cute Coin لعضو آخر\n"
             "`/توب_الكوينز` — يعرض أغنى الأعضاء\n\n"
+            "🛡️ **أوامر الإدارة**\n"
+            "`/تعويض_الجميع` — يعطي كل الأعضاء مبلغ تعويض\n"
+            "`!تعويض_الجميع المبلغ` — نفس أمر التعويض لكن بأمر عادي\n\n"
             "🛒 **المتجر**\n"
             "تقدر تشتري من لوحة المتجر بالأزرار بعد ما ترسلها الإدارة.\n\n"
 
@@ -1221,6 +1270,9 @@ class MainShopView(discord.ui.View):
 @bot.tree.command(name="متجر", description="إرسال لوحة متجر Cute Coin")
 async def متجر(interaction: discord.Interaction):
 
+    if not await require_commands_channel_interaction(interaction):
+        return
+
     if not interaction.user.guild_permissions.administrator:
         await interaction.response.send_message(
             "❌ هذا الأمر للإدارة فقط.",
@@ -1243,6 +1295,102 @@ async def متجر(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed, view=MainShopView())
 
 
+
+@bot.tree.command(name="تعويض_الجميع", description="إعطاء Cute Coin لكل أعضاء السيرفر كتعويض")
+@discord.app_commands.describe(
+    الكمية="كمية الكوينز لكل عضو",
+    السبب="سبب التعويض، اختياري"
+)
+async def تعويض_الجميع(
+    interaction: discord.Interaction,
+    الكمية: int,
+    السبب: str = "تعويض من الإدارة"
+):
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message(
+            "❌ هذا الأمر للإدارة فقط.",
+            ephemeral=True
+        )
+        return
+
+    if الكمية <= 0:
+        await interaction.response.send_message(
+            "❌ لازم الكمية تكون أكبر من صفر.",
+            ephemeral=True
+        )
+        return
+
+    await interaction.response.defer(thinking=True)
+
+    data = load_points()
+    count = 0
+
+    for member in interaction.guild.members:
+        if member.bot:
+            continue
+
+        user = get_user_data(data, member.id)
+        user["coins"] += الكمية
+        count += 1
+
+    save_points(data)
+
+    embed = discord.Embed(
+        title="🎁 تعويض جماعي",
+        description=(
+            f"تم توزيع **{الكمية} Cute Coin {COIN_EMOJI}** لكل عضو.\n"
+            f"👥 عدد المستفيدين: **{count}**\n"
+            f"📝 السبب: {السبب}"
+        ),
+        color=0x57F287
+    )
+
+    await interaction.followup.send(
+        content="@everyone",
+        embed=embed,
+        allowed_mentions=discord.AllowedMentions(everyone=True)
+    )
+
+
+@bot.command(name="تعويض_الجميع")
+async def تعويض_الجميع_امر(ctx, الكمية: int = None, *, السبب: str = "تعويض من الإدارة"):
+    if not ctx.author.guild_permissions.administrator:
+        await ctx.reply("❌ هذا الأمر للإدارة فقط.", mention_author=False)
+        return
+
+    if الكمية is None or الكمية <= 0:
+        await ctx.reply("❌ اكتب الأمر كذا: `!تعويض_الجميع 1000`", mention_author=False)
+        return
+
+    data = load_points()
+    count = 0
+
+    for member in ctx.guild.members:
+        if member.bot:
+            continue
+
+        user = get_user_data(data, member.id)
+        user["coins"] += الكمية
+        count += 1
+
+    save_points(data)
+
+    embed = discord.Embed(
+        title="🎁 تعويض جماعي",
+        description=(
+            f"تم توزيع **{الكمية} Cute Coin {COIN_EMOJI}** لكل عضو.\n"
+            f"👥 عدد المستفيدين: **{count}**\n"
+            f"📝 السبب: {السبب}"
+        ),
+        color=0x57F287
+    )
+
+    await ctx.send(
+        content="@everyone",
+        embed=embed,
+        allowed_mentions=discord.AllowedMentions(everyone=True)
+    )
+
 @bot.tree.command(name="اعطاء_كوينز", description="إعطاء Cute Coin لعضو")
 @discord.app_commands.describe(
     العضو="العضو المراد إعطاؤه الكوينز",
@@ -1253,6 +1401,9 @@ async def اعطاء_كوينز(
     العضو: discord.Member,
     الكمية: int
 ):
+
+    if not await require_commands_channel_interaction(interaction):
+        return
 
     if not interaction.user.guild_permissions.administrator:
         await interaction.response.send_message(
@@ -1298,6 +1449,9 @@ async def سحب_كوينز(
     العضو: discord.Member,
     الكمية: int
 ):
+
+    if not await require_commands_channel_interaction(interaction):
+        return
 
     if not interaction.user.guild_permissions.administrator:
         await interaction.response.send_message(
@@ -1350,6 +1504,9 @@ async def تحويل(
     الكمية: int
 ):
 
+    if not await require_commands_channel_interaction(interaction):
+        return
+
     if العضو.bot:
         await interaction.response.send_message(
             "❌ ما تقدر تحول لبوت.",
@@ -1399,6 +1556,9 @@ async def تحويل(
     await interaction.response.send_message(embed=embed)
 @bot.tree.command(name="توب_الكوينز", description="عرض أغنى أعضاء السيرفر")
 async def توب_الكوينز(interaction: discord.Interaction):
+
+    if not await require_commands_channel_interaction(interaction):
+        return
 
     data = load_points()
 
