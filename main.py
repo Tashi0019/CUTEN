@@ -1,6 +1,8 @@
 import os
 import json
 import random
+import asyncio
+import time
 from datetime import datetime
 import discord
 from discord.ext import commands
@@ -41,6 +43,41 @@ LEVEL_REWARDS = {
 
 voice_sessions = {}
 
+# حماية من سبام Discord API / Global Rate Limits
+send_lock = asyncio.Lock()
+reply_cooldowns = {}
+
+def cooldown_ready(key, seconds):
+    now = time.time()
+    last = reply_cooldowns.get(key, 0)
+    if now - last < seconds:
+        return False
+    reply_cooldowns[key] = now
+    return True
+
+async def safe_send(channel, *args, **kwargs):
+    """يرسل الرسائل بهدوء ويمنع طيحة البوت وقت الـ Rate Limit."""
+    async with send_lock:
+        try:
+            message = await channel.send(*args, **kwargs)
+            await asyncio.sleep(2)
+            return message
+        except discord.HTTPException as e:
+            print(f"[safe_send] Discord blocked/rate limited send: {e}")
+            await asyncio.sleep(10)
+            return None
+
+async def safe_reply(message, *args, **kwargs):
+    async with send_lock:
+        try:
+            reply = await message.reply(*args, **kwargs)
+            await asyncio.sleep(2)
+            return reply
+        except discord.HTTPException as e:
+            print(f"[safe_reply] Discord blocked/rate limited reply: {e}")
+            await asyncio.sleep(10)
+            return None
+
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
@@ -52,7 +89,8 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 @bot.event
 async def on_ready():
-    await bot.tree.sync()
+    # لا نسوي sync كل تشغيل عشان ما نضغط Discord API إذا Render أعاد التشغيل.
+    # إذا احتجت مزامنة، استخدم أمر !sync يدويًا مرة وحدة فقط.
     print(f"Logged on as {bot.user}!")
 
 
@@ -194,7 +232,7 @@ async def send_task_notification(guild, member, task_title, reward, luck_bonus):
         return
 
     try:
-        await channel.send(format_reward_message(member, task_title, reward, luck_bonus))
+        await safe_send(channel, format_reward_message(member, task_title, reward, luck_bonus))
     except discord.HTTPException:
         # لو ديسكورد عطانا Rate Limit لا نخلي البوت يطيح
         pass
@@ -347,46 +385,38 @@ async def on_message(message):
 
         embed.set_footer(text="Cuten Server Information")
 
-        await message.reply(embed=embed, mention_author=False)
+        await safe_reply(message, embed=embed, mention_author=False)
         return
 
     if message.content.strip().lower() == "تاشيرو":
+        # رد واحد كل 60 ثانية على مستوى السيرفر، عشان السبام ما يبند البوت من Discord API.
+        if not cooldown_ready(f"tashiro:{message.guild.id if message.guild else message.channel.id}", 60):
+            return
+
         replies = [
             ("text", "اذا ما رديت عليك اعرف اني مشغول او انك غثيث !"),
             ("text", "اسفين تاشيرو على ازعاجك بس اتمنى انك ترد على الكيوت ذا <:2heeh:1509687414921363467>"),
-            ("gif", "https://cdn.discordapp.com/attachments/1508502008720789565/1513995625052508250/tenor.gif?ex=6a29c1cd&is=6a28704d&hm=6d552be6b55400d9e4ed570ee712599f253f7dd6b94e97087b17f5d91ca7e04d&")
+            ("gif", "https://cdn.discordapp.com/attachments/1508502008720789565/1513995625052508250/tenor.gif")
         ]
 
         reply_type, content = random.choice(replies)
-
-        if reply_type == "text":
-         await message.channel.send(
-        f"{content}\n\n<@1044310877429575682>"
-    )
-        else:
-           await message.channel.send(content)
-           await message.channel.send("<@1044310877429575682>")
-
+        await safe_send(message.channel, f"{content}\n\n<@1044310877429575682>")
         return
 
-    if message.content.strip().lower() == "نيرف":   
+    if message.content.strip().lower() == "نيرف":
+        # رد واحد كل 60 ثانية على مستوى السيرفر، عشان السبام ما يبند البوت من Discord API.
+        if not cooldown_ready(f"nerv:{message.guild.id if message.guild else message.channel.id}", 60):
+            return
+
         replies = [
             ("text", "اذ شفت رسالتك برد عليك يا كيوتن !"),
             ("text", "لحظات وارد عليك يا كيوتن."),
-            ("gif", "https://cdn.discordapp.com/attachments/1508502008720789565/1513995624419430621/tenor_2.gif?ex=6a29c1cd&is=6a28704d&hm=5554aa2c193e3eab5d9f1b79612268bcb179dbb692dafda14d1805b00dbfcfa4&"),
-            ("gif", "https://cdn.discordapp.com/attachments/1508502008720789565/1513995624750776513/tenor_1.gif?ex=6a29c1cd&is=6a28704d&hm=f49b255aeeb3452c0dd8862b91f5884584f692268d0078934a0e1d45a2bd52fe&"),
+            ("gif", "https://cdn.discordapp.com/attachments/1508502008720789565/1513995624419430621/tenor_2.gif"),
+            ("gif", "https://cdn.discordapp.com/attachments/1508502008720789565/1513995624750776513/tenor_1.gif"),
         ]
 
         reply_type, content = random.choice(replies)
-
-        if reply_type == "text":
-           await message.channel.send(
-          f"{content}\n\n<@944222907385643050>"
-    )
-        else:
-            await message.channel.send(content)
-            await message.channel.send("<@944222907385643050>")
-
+        await safe_send(message.channel, f"{content}\n\n<@944222907385643050>")
         return
 
     if message.channel.id == SUGGESTION_CHANNEL_ID:
@@ -395,10 +425,12 @@ async def on_message(message):
         except:
             pass
 
-        await message.channel.send(
-            f"📮 {message.author.mention} لإرسال اقتراح جديد استخدم `/اقتراح` ثم اختر نوع الاقتراح.",
-            delete_after=8
-        )
+        if cooldown_ready(f"suggestion_warn:{message.author.id}", 30):
+            await safe_send(
+                message.channel,
+                f"📮 {message.author.mention} لإرسال اقتراح جديد استخدم `/اقتراح` ثم اختر نوع الاقتراح.",
+                delete_after=8
+            )
         return
 
     if message.channel.id == DAILY_CHANNEL_ID:
