@@ -511,8 +511,8 @@ async def setup(interaction: discord.Interaction):
         color=0xCE44DB
     )
 
-    embed.set_image(url="https://i.imgur.com/bDKuCUM.png")
-    embed.set_thumbnail(url="https://i.imgur.com/eRsBDQQ.jpeg")
+    embed.set_image(url="https://cdn.discordapp.com/attachments/1514958945213747260/1519701270057717770/31F4E062-4DEE-471C-8AC7-B95B703D35BC.gif?ex=6a3e8399&is=6a3d3219&hm=e0cfc030ec44c899ab3ee094b18834e8ec230c4ecc7d5cd1988d6f67a2c1e304")
+    embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/1514958945213747260/1519700317095198800/48290B92-733D-4D63-81AA-A835F4A2D1F1.gif?ex=6a3e82b6&is=6a3d3136&hm=4074ef87ee0a08f4926de17584f35e9c58727450cedc906041cb784ade4721f2&")
 
     view = discord.ui.View(timeout=None)
 
