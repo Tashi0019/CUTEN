@@ -216,31 +216,28 @@ def get_user_data(data, user_id):
     if "completed_tasks" not in user_data:
         user_data["completed_tasks"] = []
 
-         # الرسائل والفويس فقط تتجدد كل ساعتين
-        if time.time() - float(user_data.get("task_reset_at", 0)) >= TASK_RESET_SECONDS:
-         user_data["task_reset_at"] = time.time()
-
+    # الرسائل والفويس فقط تتجدد كل ساعتين
+    if time.time() - float(user_data.get("task_reset_at", 0)) >= TASK_RESET_SECONDS:
+        user_data["task_reset_at"] = time.time()
         user_data["tasks"]["messages"] = 0
         user_data["tasks"]["voice"] = 0
-
         user_data["completed_tasks"] = [
-        task for task in user_data["completed_tasks"]
-        if task not in ("messages", "voice")
-    ]
+            task for task in user_data["completed_tasks"]
+            if task not in ("messages", "voice")
+        ]
 
-    # نخلي last_day للهدايا/التوافق مع البيانات القديمة فقط.
-        if user_data.get("last_day") != today:
-         user_data["last_day"] = today
-
+    # الصورة والتفاعل والألعاب تتجدد عند بداية يوم جديد
+    if user_data.get("last_day") != today:
+        user_data["last_day"] = today
         user_data["tasks"]["photo"] = False
         user_data["tasks"]["reactions"] = 0
         user_data["tasks"]["games"] = 0
+        user_data["completed_tasks"] = [
+            task for task in user_data["completed_tasks"]
+            if task not in ("photo", "reactions", "games")
+        ]
 
-    user_data["completed_tasks"] = [
-        task for task in user_data["completed_tasks"]
-        if task not in ("photo", "reactions", "games")
-    ]
-
+    return user_data
 
 def get_reward_range(member):
     reward_min = DAILY_REWARD_MIN
