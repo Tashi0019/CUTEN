@@ -20,6 +20,8 @@ COMMANDS_CHANNEL_ID = 1506045404322730195
 DAILY_REWARD_MIN = 10
 DAILY_REWARD_MAX = 30
 POINTS_FILE = "points.json"
+EVENT_FILE = "event_state.json"
+TASK_RESET_SECONDS = 2 * 60 * 60
 DAILY_MESSAGES_GOAL = 30
 
 DAILY_CHANNEL_ID = 1506045466238783508
@@ -142,6 +144,31 @@ def get_today():
     return datetime.now().strftime("%Y-%m-%d")
 
 
+def load_event_state():
+    try:
+        with open(EVENT_FILE, "r", encoding="utf-8") as file:
+            state = json.load(file)
+    except (FileNotFoundError, json.JSONDecodeError):
+        state = {"active": False, "started_at": None}
+
+    state.setdefault("active", False)
+    state.setdefault("started_at", None)
+    return state
+
+
+def save_event_state(state):
+    with open(EVENT_FILE, "w", encoding="utf-8") as file:
+        json.dump(state, file, ensure_ascii=False, indent=4)
+
+
+def is_event_active():
+    return bool(load_event_state().get("active", False))
+
+
+def reward_balance_key():
+    return "event_coins" if is_event_active() else "coins"
+
+
 def get_user_data(data, user_id):
     user_id = str(user_id)
     today = get_today()
@@ -149,7 +176,9 @@ def get_user_data(data, user_id):
     if user_id not in data:
         data[user_id] = {
             "coins": 0,
+            "event_coins": 0,
             "last_day": today,
+            "task_reset_at": time.time(),
             "daily_gift_day": "",
             "tasks": {
                 "messages": 0,
@@ -166,8 +195,14 @@ def get_user_data(data, user_id):
     if "coins" not in user_data:
         user_data["coins"] = user_data.get("points", 0)
 
+    if "event_coins" not in user_data:
+        user_data["event_coins"] = 0
+
     if "daily_gift_day" not in user_data:
         user_data["daily_gift_day"] = ""
+
+    if "task_reset_at" not in user_data:
+        user_data["task_reset_at"] = time.time()
 
     if "tasks" not in user_data:
         user_data["tasks"] = {
@@ -181,8 +216,9 @@ def get_user_data(data, user_id):
     if "completed_tasks" not in user_data:
         user_data["completed_tasks"] = []
 
-    if user_data.get("last_day") != today:
-        user_data["last_day"] = today
+    # المهام تتجدد لكل عضو كل ساعتين بدل التجديد اليومي.
+    if time.time() - float(user_data.get("task_reset_at", 0)) >= TASK_RESET_SECONDS:
+        user_data["task_reset_at"] = time.time()
         user_data["tasks"] = {
             "messages": 0,
             "photo": False,
@@ -191,6 +227,10 @@ def get_user_data(data, user_id):
             "voice": 0
         }
         user_data["completed_tasks"] = []
+
+    # نخلي last_day للهدايا/التوافق مع البيانات القديمة فقط.
+    if user_data.get("last_day") != today:
+        user_data["last_day"] = today
 
     return user_data
 
@@ -268,7 +308,7 @@ def complete_task(member, task_name):
     if random.randint(1, 100) <= 10:
         luck_bonus = random.randint(5, 20)
 
-    user["coins"] += reward + luck_bonus
+    user[reward_balance_key()] += reward + luck_bonus
     user["completed_tasks"].append(task_name)
 
     save_points(data)
@@ -293,7 +333,7 @@ def add_counter_task_progress(member, task_key, goal):
         if random.randint(1, 100) <= 10:
             luck_bonus = random.randint(5, 20)
 
-        user["coins"] += reward + luck_bonus
+        user[reward_balance_key()] += reward + luck_bonus
         user["completed_tasks"].append(task_key)
 
         save_points(data)
@@ -320,7 +360,7 @@ def set_photo_task_done(member):
     if random.randint(1, 100) <= 10:
         luck_bonus = random.randint(5, 20)
 
-    user["coins"] += reward + luck_bonus
+    user[reward_balance_key()] += reward + luck_bonus
     user["completed_tasks"].append("photo")
 
     save_points(data)
@@ -901,12 +941,16 @@ async def اقتراح(interaction: discord.Interaction, النوع: discord.app
 async def رصيدي(ctx):
     data = load_points()
     user = get_user_data(data, ctx.author.id)
-    coins = user.get("coins", 0)
+    event_active = is_event_active()
+    balance_key = "event_coins" if event_active else "coins"
+    coins = user.get(balance_key, 0)
     save_points(data)
 
+    balance_name = "نقطة فعالية" if event_active else "Cute Coin"
+    title = "🎉 رصيد الفعالية" if event_active else "💰 رصيدك"
     embed = discord.Embed(
-        title="💰 رصيدك",
-        description=f"{ctx.author.mention}\n\nمعك **{coins} Cute Coin {COIN_EMOJI}**",
+        title=title,
+        description=f"{ctx.author.mention}\n\nمعك **{coins} {balance_name} {COIN_EMOJI}**",
         color=0xCE44DB
     )
 
@@ -927,8 +971,12 @@ async def مهامي(ctx):
     games_status = "مكتملة" if "games" in completed else f"{tasks['games']}/5"
     voice_status = "مكتملة" if "voice" in completed else "10 دقائق"
 
+    remaining = max(0, TASK_RESET_SECONDS - int(time.time() - float(user.get("task_reset_at", time.time()))))
+    hours, remainder = divmod(remaining, 3600)
+    minutes = remainder // 60
+
     embed = discord.Embed(
-        title="🎯 مهامك اليومية",
+        title="🎯 مهامك المتجددة",
         description=(
             f"💬 **الرسائل:** {messages_status}\n"
             f"📸 **صورة في روم الصور:** {photo_status}\n"
@@ -936,7 +984,8 @@ async def مهامي(ctx):
             f"🎮 **شات الألعاب:** {games_status}\n"
             f"🎙️ **الفويس:** {voice_status}\n\n"
             f"🎁 **المكافأة:** حسب لفلك + احتمال بونس حظ\n"
-            f"{COIN_EMOJI} **العملة:** Cute Coin"
+            f"⏳ **التجديد بعد:** {hours} ساعة و {minutes} دقيقة\n"
+            f"{COIN_EMOJI} **الرصيد الحالي:** {'نقاط الفعالية' if is_event_active() else 'Cute Coin'}"
         ),
         color=0xCE44DB
     )
@@ -945,6 +994,10 @@ async def مهامي(ctx):
 
 @bot.command(name="هدية")
 async def هدية(ctx):
+    if is_event_active():
+        await ctx.reply("🎉 الهدية اليومية متوقفة أثناء الفعالية؛ التجميع يكون من المهام فقط.", mention_author=False)
+        return
+
     data = load_points()
     user = get_user_data(data, ctx.author.id)
     today = get_today()
@@ -990,10 +1043,13 @@ async def اوامر(ctx):
             "`!مهامي` — يعرض مهامك اليومية\n"
             "`!هدية` — تستلم هديتك اليومية\n"
             "`/تحويل` — تحول Cute Coin لعضو آخر\n"
-            "`/توب_الكوينز` — يعرض أغنى الأعضاء\n\n"
+            "`/توب_الكوينز` — يعرض التوب الأصلي أو توب الفعالية تلقائيًا\n"
+            "`/حالة_الفعالية` — يعرض حالة الفعالية\n\n"
             "🛡️ **أوامر الإدارة**\n"
             "`/تعويض_الجميع` — يعطي كل الأعضاء مبلغ تعويض\n"
-            "`!تعويض_الجميع المبلغ` — نفس أمر التعويض لكن بأمر عادي\n\n"
+            "`!تعويض_الجميع المبلغ` — نفس أمر التعويض لكن بأمر عادي\n"
+            "`/بدء_الفعالية` — يبدأ رصيد فعالية منفصل\n"
+            "`/انهاء_الفعالية` — يعلن النتائج ويحذف نقاط الفعالية فقط\n\n"
             "🛒 **المتجر**\n"
             "تقدر تشتري من لوحة المتجر بالأزرار بعد ما ترسلها الإدارة.\n\n"
 
@@ -1092,6 +1148,10 @@ class ShopDetailsModal(discord.ui.Modal):
             self.add_item(self.detail3)
 
     async def on_submit(self, interaction: discord.Interaction):
+        if is_event_active():
+            await interaction.response.send_message("❌ المتجر متوقف أثناء الفعالية، ونقاط الفعالية ما تنصرف.", ephemeral=True)
+            return
+
         data = load_points()
         user = get_user_data(data, interaction.user.id)
         price = self.item["price"]
@@ -1152,6 +1212,10 @@ class ConfirmPurchaseView(discord.ui.View):
 
     @discord.ui.button(label="تأكيد الشراء", emoji="✅", style=discord.ButtonStyle.success)
     async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if is_event_active():
+            await interaction.response.send_message("❌ المتجر متوقف أثناء الفعالية، ونقاط الفعالية ما تنصرف.", ephemeral=True)
+            return
+
         if interaction.user.id != self.user_id:
             await interaction.response.send_message("هذا الطلب مو لك.", ephemeral=True)
             return
@@ -1238,6 +1302,10 @@ class ShopSelect(discord.ui.Select):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        if is_event_active():
+            await interaction.response.send_message("❌ المتجر متوقف أثناء الفعالية، ونقاط الفعالية ما تنصرف.", ephemeral=True)
+            return
+
         item_key = self.values[0]
         item = SHOP_ITEMS[item_key]
 
@@ -1539,6 +1607,13 @@ async def تحويل(
     if not await require_commands_channel_interaction(interaction):
         return
 
+    if is_event_active():
+        await interaction.response.send_message(
+            "❌ التحويل متوقف أثناء الفعالية حتى تظل نقاط المنافسة عادلة.",
+            ephemeral=True
+        )
+        return
+
     if العضو.bot:
         await interaction.response.send_message(
             "❌ ما تقدر تحول لبوت.",
@@ -1593,6 +1668,8 @@ async def توب_الكوينز(interaction: discord.Interaction):
         return
 
     data = load_points()
+    event_active = is_event_active()
+    balance_key = "event_coins" if event_active else "coins"
 
     members_data = []
 
@@ -1601,14 +1678,14 @@ async def توب_الكوينز(interaction: discord.Interaction):
 
         if member:
             members_data.append(
-                (member, user_data.get("coins", 0))
+                (member, user_data.get(balance_key, 0))
             )
 
     members_data.sort(key=lambda x: x[1], reverse=True)
 
     embed = discord.Embed(
-        title="🏆 لوحة أثرياء كيوتن",
-        description="أغنى أعضاء السيرفر حالياً 💰",
+        title="🏆 توب الفعالية" if event_active else "🏆 لوحة أثرياء كيوتن",
+        description="أعلى الأعضاء في نقاط الفعالية 🎉" if event_active else "أغنى أعضاء السيرفر حالياً 💰",
         color=0xCE44DB
     )
 
@@ -1642,5 +1719,112 @@ async def توب_الكوينز(interaction: discord.Interaction):
     )
 
     await interaction.response.send_message(embed=embed)
+
+
+@bot.tree.command(name="بدء_الفعالية", description="بدء فعالية النقاط المنفصلة وتصفير نقاط الفعالية")
+async def بدء_الفعالية(interaction: discord.Interaction):
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message("❌ هذا الأمر للإدارة فقط.", ephemeral=True)
+        return
+
+    state = load_event_state()
+    if state.get("active"):
+        await interaction.response.send_message("❌ الفعالية شغالة بالفعل.", ephemeral=True)
+        return
+
+    await interaction.response.defer(thinking=True)
+    data = load_points()
+    count = 0
+    now = time.time()
+
+    for member in interaction.guild.members:
+        if member.bot:
+            continue
+        user = get_user_data(data, member.id)
+        user["event_coins"] = 0
+        user["task_reset_at"] = now
+        user["tasks"] = {"messages": 0, "photo": False, "reactions": 0, "games": 0, "voice": 0}
+        user["completed_tasks"] = []
+        count += 1
+
+    save_points(data)
+    save_event_state({"active": True, "started_at": datetime.now().isoformat()})
+
+    embed = discord.Embed(
+        title="🎉 بدأت فعالية Cute Coin",
+        description=(
+            "تم تصفير **نقاط الفعالية فقط** لجميع الأعضاء.\n"
+            "الأرصدة الأصلية محفوظة ولن تتغير.\n"
+            "المهام تتجدد كل **ساعتين**، والمتجر والتحويل متوقفان أثناء الفعالية.\n\n"
+            f"👥 تم تجهيز **{count}** عضو."
+        ),
+        color=0xF8BBD0
+    )
+    await interaction.followup.send(content="@everyone", embed=embed, allowed_mentions=discord.AllowedMentions(everyone=True))
+
+
+@bot.tree.command(name="انهاء_الفعالية", description="إنهاء الفعالية وحذف نقاطها دون لمس الرصيد الأصلي")
+async def انهاء_الفعالية(interaction: discord.Interaction):
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message("❌ هذا الأمر للإدارة فقط.", ephemeral=True)
+        return
+
+    state = load_event_state()
+    if not state.get("active"):
+        await interaction.response.send_message("❌ ما فيه فعالية شغالة حالياً.", ephemeral=True)
+        return
+
+    await interaction.response.defer(thinking=True)
+    data = load_points()
+    ranking = []
+
+    for user_id, user_data in data.items():
+        member = interaction.guild.get_member(int(user_id))
+        points = int(user_data.get("event_coins", 0))
+        if member and not member.bot:
+            ranking.append((member, points))
+
+    ranking.sort(key=lambda item: item[1], reverse=True)
+    top_five = ranking[:5]
+    result_text = ""
+    medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"]
+    for index, (member, points) in enumerate(top_five):
+        result_text += f"{medals[index]} {member.mention} — **{points:,}** نقطة\n"
+    if not result_text:
+        result_text = "لا توجد نتائج."
+
+    # بعد حفظ النتائج في الرسالة نحذف نقاط الفعالية فقط.
+    for user_data in data.values():
+        user_data["event_coins"] = 0
+
+    save_points(data)
+    save_event_state({"active": False, "started_at": None})
+
+    embed = discord.Embed(
+        title="🏁 انتهت فعالية Cute Coin",
+        description=(
+            f"**النتائج النهائية:**\n{result_text}\n"
+            "تم حذف جميع نقاط الفعالية، والأرصدة الأصلية بقيت كما كانت بدون أي إضافة أو خصم."
+        ),
+        color=0x57F287
+    )
+    await interaction.followup.send(content="@everyone", embed=embed, allowed_mentions=discord.AllowedMentions(everyone=True))
+
+
+@bot.tree.command(name="حالة_الفعالية", description="عرض حالة فعالية النقاط")
+async def حالة_الفعالية(interaction: discord.Interaction):
+    if not await require_commands_channel_interaction(interaction):
+        return
+
+    state = load_event_state()
+    if state.get("active"):
+        text = "✅ الفعالية شغالة الآن.\nالمهام تتجدد كل ساعتين، والرصيد الأصلي محفوظ."
+        color = 0x57F287
+    else:
+        text = "⛔ لا توجد فعالية شغالة حالياً."
+        color = 0xED4245
+
+    await interaction.response.send_message(embed=discord.Embed(title="🎉 حالة الفعالية", description=text, color=color))
+
 
 bot.run(os.getenv("TOKEN"))
