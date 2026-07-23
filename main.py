@@ -180,6 +180,8 @@ def get_user_data(data, user_id):
             "last_day": today,
             "task_reset_at": time.time(),
             "daily_gift_day": "",
+            "gamble_day": today,
+            "gamble_uses": 0,
             "tasks": {
                 "messages": 0,
                 "photo": False,
@@ -200,6 +202,17 @@ def get_user_data(data, user_id):
 
     if "daily_gift_day" not in user_data:
         user_data["daily_gift_day"] = ""
+
+    if "gamble_day" not in user_data:
+        user_data["gamble_day"] = today
+
+    if "gamble_uses" not in user_data:
+        user_data["gamble_uses"] = 0
+
+    # لعبة الحظ متاحة مرتين فقط كل يوم
+    if user_data.get("gamble_day") != today:
+        user_data["gamble_day"] = today
+        user_data["gamble_uses"] = 0
 
     if "task_reset_at" not in user_data:
         user_data["task_reset_at"] = time.time()
@@ -983,9 +996,9 @@ async def مهامي(ctx):
         title="🎯 مهامك المتجددة",
         description=(
             f"💬 **الرسائل:** {messages_status}\n"
-            f"📸 **صورة في روم الصور:** {photo_status}\n"
-            f"💞 **تفاعل في اليوميات:** {daily_status}\n"
-            f"🎮 **شات الألعاب:** {games_status}\n"
+            f"📸 **صورة في <#{PHOTO_CHANNEL_ID}>:** {photo_status}\n"
+            f"💞 **تفاعل في <#{DAILY_CHANNEL_ID}>:** {daily_status}\n"
+            f"🎮 **رسائل في <#{GAMES_CHANNEL_ID}>:** {games_status}\n"
             f"🎙️ **الفويس:** {voice_status}\n\n"
             f"🎁 **المكافأة:** حسب لفلك + احتمال بونس حظ\n"
             f"⏳ **التجديد بعد:** {hours} ساعة و {minutes} دقيقة\n"
@@ -1234,6 +1247,15 @@ class ConfirmPurchaseView(discord.ui.View):
         user = get_user_data(data, interaction.user.id)
         price = item["price"]
 
+        if self.item_key == "gamble" and user.get("gamble_uses", 0) >= 2:
+            save_points(data)
+            await interaction.response.edit_message(
+                content="❌ استخدمت لعبة **تصيب أو تخيب** مرتين اليوم. ارجع بكرا عشان تلعب من جديد.",
+                embed=None,
+                view=None
+            )
+            return
+
         if user["coins"] < price:
             await interaction.response.edit_message(
                 content=f"❌ رصيدك ما يكفي.\nمعك **{user['coins']} {COIN_EMOJI}**",
@@ -1243,6 +1265,10 @@ class ConfirmPurchaseView(discord.ui.View):
             return
 
         user["coins"] -= price
+
+        if self.item_key == "gamble":
+            user["gamble_uses"] = user.get("gamble_uses", 0) + 1
+            user["gamble_day"] = get_today()
 
         result = random.choice(["lose", "win", "big_win", "jackpot"])
 
@@ -1268,7 +1294,8 @@ class ConfirmPurchaseView(discord.ui.View):
             content=(
                 f"🎲 **تصيب أو تخيب**\n\n"
                 f"{result_text}\n"
-                f"رصيدك الآن: **{user['coins']} {COIN_EMOJI}**"
+                f"رصيدك الآن: **{user['coins']} {COIN_EMOJI}**\n"
+                f"محاولاتك اليوم: **{user.get('gamble_uses', 0)}/2**"
             ),
             embed=None,
             view=None
