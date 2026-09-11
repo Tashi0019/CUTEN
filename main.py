@@ -1856,115 +1856,325 @@ async def حالة_الفعالية(interaction: discord.Interaction):
         color = 0xED4245
 
     await interaction.response.send_message(embed=discord.Embed(title="🎉 حالة الفعالية", description=text, color=color))
-    const { MessageEmbed } = require("discord.js");
-const { prefix, owners } = require(`${process.cwd()}/config`);
-const Pro = require(`pro.db`);
+  # =========================
+# 🛡️ نظام البان والطرد
+# =========================
 
-// Define a map to keep track of bans issued by each user
-const banCount = new Map();
+def get_member_from_arg(ctx, argument):
+    """يجيب العضو من المنشن أو ID."""
+    if not argument:
+        return None
 
-// Reset ban count for each user after 24 hours
-setInterval(() => {
-  banCount.clear(); // Clear all ban counts
-}, 24 * 60 * 60 * 1000); // Reset ban count every 24 hours
+    # منشن
+    if ctx.message.mentions:
+        return ctx.message.mentions[0]
 
-module.exports = {
-  name: 'ban',
-aliases: ['برا','باند', 'موت', 'اركبعليه'],
-run: async (client, message) => {
-    const Color = Pro.get(`Guild_Color_${message.guild.id}`) || message.guild.me.displayHexColor || `#000000`;
-    const allowedRoleId = Pro.get(`Allow_Command_ban_${message.guild.id}`);
-    const allowedRole = message.guild.roles.cache.get(allowedRoleId);
-    const isAuthorAllowed = message.member.roles.cache.has(allowedRole?.id);
+    # ID
+    try:
+        member_id = int(argument)
+        return ctx.guild.get_member(member_id)
+    except (ValueError, TypeError):
+        return None
 
-    // Fetch the ban limit from the database
-    const banLimit = Pro.get(`ban_limit_${message.guild.id}`) || 3; // Default to 3 if no limit is set
 
-    // Check if the user has reached the ban limit
-    if (banCount.has(message.author.id) && banCount.get(message.author.id) >= banLimit) {
-      return message.reply(':rolling_eyes: - **The ban limit has been exceeded.**');
-    }
+@bot.command(
+    name="بان",
+    aliases=["دز", "برا", "اركبعليه"]
+)
+async def بان(ctx, العضو: str = None, *, السبب: str = "بدون سبب"):
 
-    // Existing checks for permissions, member mention, etc.
-    if (!isAuthorAllowed && message.member.id !== allowedRoleId && !message.member.permissions.has('BAN_MEMBERS')) {
-      return message.react(`❌`);
-    }
+    if not ctx.author.guild_permissions.ban_members:
+        await ctx.reply(
+            "❌ ما عندك صلاحية **Ban Members**.",
+            mention_author=False
+        )
+        return
 
-    const args = message.content.trim().split(/ +/);
-    let member;
+    if not ctx.guild.me.guild_permissions.ban_members:
+        await ctx.reply(
+            "❌ ما عندي صلاحية **Ban Members**.",
+            mention_author=False
+        )
+        return
 
-    // Attempt to fetch member from mention; otherwise check if ID is valid
-    if (message.mentions.members.size) {
-      member = message.mentions.members.first();
-    } else if (args[1] && !isNaN(args[1])) {
-      member = await message.guild.members.fetch(args[1]).catch(() => null);
-    } else {
-      const dbAliases = Pro.get(`aliases_${module.exports.name}`) || []; 
-      const allAliases = [...new Set([...module.exports.aliases, ...dbAliases])]; 
-      const aliases = allAliases.join(', '); 
+    if not العضو:
+        await ctx.reply(
+            "❌ الاستخدام الصحيح:\n"
+            "`!بان @العضو السبب`\n"
+            "`!بان ID السبب`",
+            mention_author=False
+        )
+        return
 
-      const embed = new MessageEmbed()
-        .setColor(Color || `#000000`)
-        .setTitle("Command: ban")
-        .setDescription("Bans a member.")
-        .addField("Aliases:", aliases || 'لا يوجد.')
-        .addField("Usage:", `\`${prefix}ban [user]\``)
-        .addField("Examples:", `\`${prefix}ban @user\`\n\`${prefix}ban 123456789012345678\``);
-      return message.reply({ embeds: [embed] });
-    }
+    member = get_member_from_arg(ctx, العضو)
 
-    if (member.id === client.user.id) {
-      return message.reply("**🙄 You can't ban a bot.**");
-    }
+    if not member:
+        await ctx.reply(
+            "❌ ما لقيت العضو. تأكد من المنشن أو الـ ID.",
+            mention_author=False
+        )
+        return
 
-    if (!message.guild.me.permissions.has('BAN_MEMBERS')) {
-      return message.reply('**🙄 I do not have permission to ban members.**');
-    }
+    # منع البان على نفسك
+    if member.id == ctx.author.id:
+        await ctx.reply(
+            "❌ ما تقدر تحظر نفسك.",
+            mention_author=False
+        )
+        return
 
-    if (member.permissions.has('BAN_MEMBERS')) {
-      return message.reply('**🙄 You cannot ban this member.**');
-    }
+    # منع البان على البوت
+    if member.id == bot.user.id:
+        await ctx.reply(
+            "❌ ما تقدر تحظر البوت.",
+            mention_author=False
+        )
+        return
 
-    if (member.id === message.author.id) {
-      return message.reply("**🙄 You cannot ban yourself.**");
-    }
+    # حماية الرتب
+    if member.top_role >= ctx.guild.me.top_role:
+        await ctx.reply(
+            "❌ ما أقدر أحظر هذا العضو لأن رتبته أعلى مني أو مساوية لرتبتي.",
+            mention_author=False
+        )
+        return
 
-    const reason = args.slice(2).join(' ') || 'No reason provided';
+    # منع الشخص من حظر شخص أعلى منه
+    if member.top_role >= ctx.author.top_role and ctx.author.id != ctx.guild.owner_id:
+        await ctx.reply(
+            "❌ ما تقدر تحظر عضو رتبته أعلى منك أو مساوية لرتبتك.",
+            mention_author=False
+        )
+        return
 
-    const bans = await message.guild.bans.fetch();
-    if (bans.has(member.id)) {
-      return message.reply("**This user is already banned.**");
-    }
+    try:
+        await ctx.guild.ban(
+            member,
+            reason=f"{السبب} | بواسطة: {ctx.author}"
+        )
 
-    try {
-      await message.guild.members.ban(member, { reason });
-      message.reply(`**:white_check_mark: ${member} banned from the server! :airplane:.**`);
+        embed = discord.Embed(
+            title="🔨 تم حظر عضو",
+            description=(
+                f"👤 **العضو:** {member.mention}\n"
+                f"🛡️ **بواسطة:** {ctx.author.mention}\n"
+                f"📝 **السبب:** {السبب}"
+            ),
+            color=0xED4245
+        )
 
-      const currentCount = banCount.get(message.author.id) || 0;
-      banCount.set(message.author.id, currentCount + 1);
+        await ctx.reply(
+            embed=embed,
+            mention_author=False
+        )
 
-      const logbanunban = Pro.get(`logbanunban_${message.guild.id}`);
-      const logChannel = message.guild.channels.cache.find((c) => c.id === logbanunban);
+    except discord.Forbidden:
+        await ctx.reply(
+            "❌ ما قدرت أحظر العضو. تأكد من ترتيب الرتب وصلاحياتي.",
+            mention_author=False
+        )
 
-      if (logChannel) {
-        const bannedMemberAvatar = member.user.displayAvatarURL({ dynamic: true });
-        const embedLog = new MessageEmbed()
-          .setColor("#880013")
-          .setAuthor(member.user.tag, bannedMemberAvatar)
-          .setDescription(`**حظر عضو**\n\n**لـ : <@${member.id}>**\n**بواسطة : <@${message.author.id}>**\n\`\`\`سبب : ${reason}\`\`\``)
-          .setFooter({ text: message.guild.name, iconURL: message.guild.iconURL({ dynamic: true }) })
-          .setThumbnail('https://cdn.discordapp.com/attachments/1093303174774927511/1138892172574326874/82073587-11BA-4E4B-AC8F-8857CD89282F.png');
+    except discord.HTTPException as e:
+        print(f"[BAN ERROR] {e}")
+        await ctx.reply(
+            "❌ حدث خطأ أثناء محاولة حظر العضو.",
+            mention_author=False
+        )
 
-        await logChannel.send({ embeds: [embedLog] });
-      }
 
-      message.react(`✅`);
-    } catch (error) {
-      console.error(error);
-      message.reply("**An error occurred while trying to ban the member.**");
-    }
-  }
-};
+@bot.command(
+    name="طرد",
+    aliases=["هش", "باي", "ختفو" "67"]
+)
+async def طرد(ctx, العضو: str = None, *, السبب: str = "بدون سبب"):
 
+    if not ctx.author.guild_permissions.kick_members:
+        await ctx.reply(
+            "❌ ما عندك صلاحية **Kick Members**.",
+            mention_author=False
+        )
+        return
+
+    if not ctx.guild.me.guild_permissions.kick_members:
+        await ctx.reply(
+            "❌ ما عندي صلاحية **Kick Members**.",
+            mention_author=False
+        )
+        return
+
+    if not العضو:
+        await ctx.reply(
+            "❌ الاستخدام الصحيح:\n"
+            "`!طرد @العضو السبب`\n"
+            "`!طرد ID السبب`",
+            mention_author=False
+        )
+        return
+
+    member = get_member_from_arg(ctx, العضو)
+
+    if not member:
+        await ctx.reply(
+            "❌ ما لقيت العضو. تأكد من المنشن أو الـ ID.",
+            mention_author=False
+        )
+        return
+
+    if member.id == ctx.author.id:
+        await ctx.reply(
+            "❌ ما تقدر تطرد نفسك.",
+            mention_author=False
+        )
+        return
+
+    if member.id == bot.user.id:
+        await ctx.reply(
+            "❌ ما تقدر تطرد البوت.",
+            mention_author=False
+        )
+        return
+
+    if member.top_role >= ctx.guild.me.top_role:
+        await ctx.reply(
+            "❌ ما أقدر أطرد هذا العضو لأن رتبته أعلى مني أو مساوية لرتبتي.",
+            mention_author=False
+        )
+        return
+
+    if member.top_role >= ctx.author.top_role and ctx.author.id != ctx.guild.owner_id:
+        await ctx.reply(
+            "❌ ما تقدر تطرد عضو رتبته أعلى منك أو مساوية لرتبتك.",
+            mention_author=False
+        )
+        return
+
+    try:
+        await member.kick(
+            reason=f"{السبب} | بواسطة: {ctx.author}"
+        )
+
+        embed = discord.Embed(
+            title="👢 تم طرد عضو",
+            description=(
+                f"👤 **العضو:** {member.mention}\n"
+                f"🛡️ **بواسطة:** {ctx.author.mention}\n"
+                f"📝 **السبب:** {السبب}"
+            ),
+            color=0xFEE75C
+        )
+
+        await ctx.reply(
+            embed=embed,
+            mention_author=False
+        )
+
+    except discord.Forbidden:
+        await ctx.reply(
+            "❌ ما قدرت أطرد العضو. تأكد من ترتيب الرتب وصلاحياتي.",
+            mention_author=False
+        )
+
+    except discord.HTTPException as e:
+        print(f"[KICK ERROR] {e}")
+        await ctx.reply(
+            "❌ حدث خطأ أثناء محاولة طرد العضو.",
+            mention_author=False
+        )
+
+
+@bot.command(
+    name="فك_باند",
+    aliases=["unban", "فكباند", "فك"]
+)
+async def فك_باند(ctx, user_id: str = None, *, السبب: str = "بدون سبب"):
+
+    if not ctx.author.guild_permissions.ban_members:
+        await ctx.reply(
+            "❌ ما عندك صلاحية **Ban Members**.",
+            mention_author=False
+        )
+        return
+
+    if not ctx.guild.me.guild_permissions.ban_members:
+        await ctx.reply(
+            "❌ ما عندي صلاحية **Ban Members**.",
+            mention_author=False
+        )
+        return
+
+    if not user_id:
+        await ctx.reply(
+            "❌ الاستخدام الصحيح:\n"
+            "`!فك_باند ID السبب`",
+            mention_author=False
+        )
+        return
+
+    # التأكد أن الـ ID صحيح
+    try:
+        user_id = int(user_id)
+    except ValueError:
+        await ctx.reply(
+            "❌ الـ ID غير صحيح.",
+            mention_author=False
+        )
+        return
+
+    try:
+        # التأكد أن الشخص مبند فعلًا
+        ban_entry = await ctx.guild.fetch_ban(
+            discord.Object(id=user_id)
+        )
+
+    except discord.NotFound:
+        await ctx.reply(
+            "❌ هذا العضو غير موجود في قائمة الباند.",
+            mention_author=False
+        )
+        return
+
+    except discord.Forbidden:
+        await ctx.reply(
+            "❌ ما عندي صلاحية مشاهدة قائمة الباند.",
+            mention_author=False
+        )
+        return
+
+    try:
+        await ctx.guild.unban(
+            discord.Object(id=user_id),
+            reason=f"{السبب} | بواسطة: {ctx.author}"
+        )
+
+        user = ban_entry.user
+
+        embed = discord.Embed(
+            title="🔓 تم فك الباند",
+            description=(
+                f"👤 **العضو:** {user.mention}\n"
+                f"🆔 **ID:** `{user.id}`\n"
+                f"🛡️ **بواسطة:** {ctx.author.mention}\n"
+                f"📝 **السبب:** {السبب}"
+            ),
+            color=0x57F287
+        )
+
+        await ctx.reply(
+            embed=embed,
+            mention_author=False
+        )
+
+    except discord.Forbidden:
+        await ctx.reply(
+            "❌ ما قدرت أفك الباند. تأكد من صلاحياتي.",
+            mention_author=False
+        )
+
+    except discord.HTTPException as e:
+        print(f"[UNBAN ERROR] {e}")
+        await ctx.reply(
+            "❌ حدث خطأ أثناء محاولة فك الباند.",
+            mention_author=False
+        )
 
 bot.run(os.getenv("TOKEN"))
