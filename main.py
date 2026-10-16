@@ -7,7 +7,7 @@ from datetime import datetime
 import discord
 from discord.ext import commands
 from keep_alive import keep_alive
-
+from discord import app_commands
 keep_alive()
 
 SUGGESTION_CHANNEL_ID = 1541245606625021953
@@ -23,7 +23,7 @@ POINTS_FILE = "points.json"
 EVENT_FILE = "event_state.json"
 TASK_RESET_SECONDS = 2 * 60 * 60
 DAILY_MESSAGES_GOAL = 30
-
+EMBEDS_FILE = "embeds.json"
 DAILY_CHANNEL_ID = 1506045466238783508
 PHOTO_CHANNEL_ID = 1506045452141727754
 GAMES_CHANNEL_ID = 1506045433816813638
@@ -1984,7 +1984,7 @@ async def بان(ctx, العضو: str = None, *, السبب: str = "بدون س�
 
 @bot.command(
     name="طرد",
-    aliases=["هش", "باي", "ختفو" "67"]
+    aliases=["هش", "باي", "ختفو", "67"]
 )
 async def طرد(ctx, العضو: str = None, *, السبب: str = "بدون سبب"):
 
@@ -2175,6 +2175,271 @@ async def فك_باند(ctx, user_id: str = None, *, السبب: str = "بدون
         await ctx.reply(
             "❌ حدث خطأ أثناء محاولة فك الباند.",
             mention_author=False
+        )
+
+
+def load_embeds():
+    if not os.path.exists(EMBEDS_FILE):
+        return {}
+    try:
+        with open(EMBEDS_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+def save_embeds(data):
+    with open(EMBEDS_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=4)
+
+
+def make_embed(title, description, color, image_url, footer):
+    try:
+        embed_color = int(color.strip().replace("#", ""), 16)
+        if not 0 <= embed_color <= 0xFFFFFF:
+            raise ValueError
+    except ValueError:
+        raise ValueError("اللون غير صحيح. مثال: CE44DB")
+
+    embed = discord.Embed(
+        title=title or None,
+        description=description or None,
+        color=embed_color
+    )
+
+    if image_url:
+        embed.set_image(url=image_url)
+
+    if footer:
+        embed.set_footer(text=footer)
+
+    return embed
+
+
+class EmbedEditor(discord.ui.Modal):
+    def __init__(self, channel, message=None):
+        super().__init__(title="إعدادات Cuten Embed")
+        self.channel = channel
+        self.message = message
+
+        self.title_field = discord.ui.TextInput(
+            label="العنوان",
+            required=False,
+            max_length=256
+        )
+        self.description_field = discord.ui.TextInput(
+            label="الوصف",
+            style=discord.TextStyle.paragraph,
+            required=False,
+            max_length=4000
+        )
+        self.color_field = discord.ui.TextInput(
+            label="اللون HEX",
+            default="CE44DB",
+            required=True,
+            max_length=7
+        )
+        self.image_field = discord.ui.TextInput(
+            label="رابط الصورة (اختياري)",
+            required=False,
+            max_length=400
+        )
+        self.footer_field = discord.ui.TextInput(
+            label="الفوتر (اختياري)",
+            required=False,
+            max_length=2048
+        )
+
+        for field in (
+            self.title_field,
+            self.description_field,
+            self.color_field,
+            self.image_field,
+            self.footer_field
+        ):
+            self.add_item(field)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        try:
+            embed = make_embed(
+                self.title_field.value,
+                self.description_field.value,
+                self.color_field.value,
+                self.image_field.value,
+                self.footer_field.value
+            )
+
+            if self.message:
+                await self.message.edit(embed=embed)
+                message = self.message
+            else:
+                message = await self.channel.send(embed=embed)
+
+            data = load_embeds()
+            data[str(message.id)] = {
+                "guild_id": interaction.guild_id,
+                "channel_id": self.channel.id,
+                "message_id": message.id
+            }
+            save_embeds(data)
+
+            await interaction.response.send_message(
+                f"تم حفظ الـ Embed بنجاح في {self.channel.mention}",
+                ephemeral=True
+            )
+
+        except ValueError as error:
+            await interaction.response.send_message(
+                str(error), ephemeral=True
+            )
+        except discord.Forbidden:
+            await interaction.response.send_message(
+                "البوت ما عنده صلاحية إرسال أو تعديل الرسالة.",
+                ephemeral=True
+            )
+        except discord.HTTPException:
+            await interaction.response.send_message(
+                "تعذّر تنفيذ العملية. تأكد من البيانات والصلاحيات.",
+                ephemeral=True
+            )
+
+
+def is_admin(interaction: discord.Interaction):
+    return (
+        interaction.guild is not None
+        and interaction.user.guild_permissions.administrator
+    )
+
+
+@bot.tree.command(
+    name="embed_create",
+    description="إنشاء Embed جديد والتحكم في تصميمه"
+)
+@app_commands.describe(channel="الروم الذي تريد إرسال الـ Embed فيه")
+@app_commands.check(is_admin)
+async def embed_create(
+    interaction: discord.Interaction,
+    channel: discord.TextChannel
+):
+    await interaction.response.send_modal(EmbedEditor(channel))
+
+
+@bot.tree.command(
+    name="embed_edit",
+    description="تعديل Embed سبق أن أنشأه البوت"
+)
+@app_commands.describe(
+    channel="روم الرسالة",
+    message_id="رقم الرسالة التي تريد تعديلها"
+)
+@app_commands.check(is_admin)
+async def embed_edit(
+    interaction: discord.Interaction,
+    channel: discord.TextChannel,
+    message_id: str
+):
+    data = load_embeds()
+
+    if message_id not in data:
+        await interaction.response.send_message(
+            "ما لقيت Embed محفوظًا بهذا الرقم.",
+            ephemeral=True
+        )
+        return
+
+    record = data[message_id]
+
+    if (
+        record["guild_id"] != interaction.guild_id
+        or record["channel_id"] != channel.id
+    ):
+        await interaction.response.send_message(
+            "الرسالة لا تطابق السيرفر أو الروم المحدد.",
+            ephemeral=True
+        )
+        return
+
+    try:
+        message = await channel.fetch_message(int(message_id))
+        await interaction.response.send_modal(
+            EmbedEditor(channel, message)
+        )
+    except (ValueError, discord.NotFound, discord.Forbidden,
+            discord.HTTPException):
+        await interaction.response.send_message(
+            "تعذّر العثور على الرسالة أو الوصول إليها.",
+            ephemeral=True
+        )
+
+
+@bot.tree.command(
+    name="embed_delete",
+    description="حذف Embed محفوظ"
+)
+@app_commands.describe(
+    channel="روم الرسالة",
+    message_id="رقم الرسالة"
+)
+@app_commands.check(is_admin)
+async def embed_delete(
+    interaction: discord.Interaction,
+    channel: discord.TextChannel,
+    message_id: str
+):
+    data = load_embeds()
+
+    if message_id not in data:
+        await interaction.response.send_message(
+            "هذا الـ Embed غير موجود في قائمة المحفوظات.",
+            ephemeral=True
+        )
+        return
+
+    record = data[message_id]
+
+    if (
+        record["guild_id"] != interaction.guild_id
+        or record["channel_id"] != channel.id
+    ):
+        await interaction.response.send_message(
+            "الرسالة لا تطابق السيرفر أو الروم المحدد.",
+            ephemeral=True
+        )
+        return
+
+    try:
+        message = await channel.fetch_message(int(message_id))
+        await message.delete()
+        del data[message_id]
+        save_embeds(data)
+
+        await interaction.response.send_message(
+            "تم حذف الـ Embed بنجاح.",
+            ephemeral=True
+        )
+    except (ValueError, discord.NotFound, discord.Forbidden,
+            discord.HTTPException):
+        await interaction.response.send_message(
+            "تعذّر حذف الرسالة. تأكد من صلاحيات البوت.",
+            ephemeral=True
+        )
+
+
+@bot.tree.error
+async def embed_command_error(
+    interaction: discord.Interaction,
+    error: app_commands.AppCommandError
+):
+    if isinstance(error, app_commands.CheckFailure):
+        message = "هذا الأمر مخصص لإداريي السيرفر."
+    else:
+        message = "صار خطأ أثناء تنفيذ الأمر. تحقق من سجل البوت."
+
+    if interaction.response.is_done():
+        await interaction.followup.send(message, ephemeral=True)
+    else:
+        await interaction.response.send_message(
+            message, ephemeral=True
         )
 
 bot.run(os.getenv("TOKEN"))
