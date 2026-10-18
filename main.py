@@ -567,7 +567,7 @@ async def setup(interaction: discord.Interaction):
     print("DEBUG: /setup command started")
 
     embed = discord.Embed(
-        title="<a:fku:1509688683643666472> مَلَاذ | Sanctuary",
+        title="<:0_ai1_peace:1560430974498639892> مَلَاذ | Sanctuary",
         description="أهلًا فيك في مَلَاذ\nاستخدم الأزرار بالأسفل للتعرف على سيرفرنا ومميزاته",
         color=0xCE44DB
     )
@@ -579,7 +579,7 @@ async def setup(interaction: discord.Interaction):
 
     about_button = discord.ui.Button(
         label="نبذة عنا",
-        emoji="<a:A_:1449356217674764399>",
+        emoji="<:1166764450909532280:1560430950305898606>",
         style=discord.ButtonStyle.secondary
     )
 
@@ -602,7 +602,7 @@ async def setup(interaction: discord.Interaction):
 
     rules_button = discord.ui.Button(
         label="القوانين",
-        emoji="<a:6bonk:1509687959086043166>",
+        emoji="<:love:1560415833111662774>",
         style=discord.ButtonStyle.secondary
     )
 
@@ -622,7 +622,7 @@ async def setup(interaction: discord.Interaction):
 
     invite_button = discord.ui.Button(
         label="دعوة سيرفر",
-        emoji="<a:heart:1511835528876654723>",
+        emoji="<:cuterin:1560401264834117672>",
         style=discord.ButtonStyle.secondary
     )
 
@@ -641,7 +641,7 @@ async def setup(interaction: discord.Interaction):
 
     server_button = discord.ui.Button(
         label="سيرفراتنا",
-        emoji="<:wow:1509681789302603886>",
+        emoji="<:emoji_360:1560415873754464366>",
         style=discord.ButtonStyle.secondary
     )
 
@@ -661,7 +661,7 @@ async def setup(interaction: discord.Interaction):
 
     boost_button = discord.ui.Button(
         label="مميزات البوست",
-        emoji="<:emoji_87:1476137223161380934>",
+        emoji="<a:emoji_144:1560453089717264524>",
         style=discord.ButtonStyle.secondary
     )
 
@@ -691,7 +691,7 @@ async def setup(interaction: discord.Interaction):
 
     levels_button = discord.ui.Button(
         label="مميزات اللفل",
-        emoji="<a:6celebrate:1509687911732351046>",
+        emoji="<a:0emoji_4:1560415887620702238>",
         style=discord.ButtonStyle.secondary
     )
 
@@ -727,7 +727,7 @@ async def setup(interaction: discord.Interaction):
 
     help_button = discord.ui.Button(
         label="مساعدة",
-        emoji="<a:noih10:1509687143809941515>",
+        emoji="<:1Menherawhat:1560401330156081294>",
         style=discord.ButtonStyle.secondary
     )
 
@@ -746,7 +746,7 @@ async def setup(interaction: discord.Interaction):
 
     tag_button = discord.ui.Button(
         label="مميزات التاق",
-        emoji="<a:6Love:1509687854681424033>",
+        emoji="<:icon:1560415847028236359> ",
         style=discord.ButtonStyle.secondary
     )
 
