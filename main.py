@@ -8,6 +8,7 @@ import discord
 from discord.ext import commands
 from keep_alive import keep_alive
 from discord import app_commands
+
 keep_alive()
 
 SUGGESTION_CHANNEL_ID = 1541245606625021953
@@ -389,7 +390,7 @@ async def on_message(message):
     if message.author.bot:
         return
 
-    if message.content.strip() == "كيوتن":
+    if message.content.strip() == "ملاذ":
         guild = message.guild
 
         humans = len([m for m in guild.members if not m.bot])
@@ -401,38 +402,36 @@ async def on_message(message):
         created_at = discord.utils.format_dt(guild.created_at, style="D")
 
         embed = discord.Embed(
-            title="🎀 𝗖𝘂𝘁𝗲𝗻 𝗭𝗼𝗻𝗲 🎀",
-            description=(
-                "✨ **أهلاً بك في عالم كيوتن** ✨\n"
-                "مجتمع لطيف، سوالف، فعاليات، وأجواء رايقة.\n\n"
+            title="🎀  مَلَاذ  |  Sanctuary 🎀",
+            description=f"""✨ **أهلاً بك في مَلَاذ  |  Sanctuary** ✨
+مجتمع لطيف، سوالف، فعاليات، وأجواء رايقة.
 
-                "╭───・🧸 معلومات المجتمع・───╮\n"
-                f"👥 **كل الأعضاء:** {guild.member_count}\n"
-                f"👤 **الأعضاء الحقيقيين:** {humans}\n"
-                f"🤖 **البوتات:** {bots}\n"
-                f"🟢 **المتصلين الآن:** {online}\n"
-                f"👑 **المالك:** {guild.owner.mention}\n"
-                f"📅 **تأسس السيرفر:** {created_at}\n"
-                "╰────────────────────╯\n\n"
+╭───・🧸 معلومات المجتمع・───╮
+👥 **كل الأعضاء:** {guild.member_count}
+👤 **الأعضاء الحقيقيين:** {humans}
+🤖 **البوتات:** {bots}
+🟢 **المتصلين الآن:** {online}
+👑 **المالك:** {guild.owner.mention}
+📅 **تأسس السيرفر:** {created_at}
+╰────────────────────╯
 
-                "╭───・📁 معلومات الرومات・───╮\n"
-                f"💬 **رومات كتابية:** {text_channels}\n"
-                f"🎙️ **رومات صوتية:** {voice_channels}\n"
-                f"🗂️ **الأقسام:** {categories}\n"
-                f"📌 **كل الرومات:** {len(guild.channels)}\n"
-                "╰────────────────────╯\n\n"
+╭───・📁 معلومات الرومات・───╮
+💬 **رومات كتابية:** {text_channels}
+🎙️ **رومات صوتية:** {voice_channels}
+🗂️ **الأقسام:** {categories}
+📌 **كل الرومات:** {len(guild.channels)}
+╰────────────────────╯
 
-                "╭───・🌸 الدعم والتجميل・───╮\n"
-                f"🚀 **عدد البوستات:** {guild.premium_subscription_count}\n"
-                f"💎 **مستوى البوست:** {guild.premium_tier}\n"
-                f"🎭 **عدد الرتب:** {len(guild.roles)}\n"
-                f"😺 **الإيموجيات:** {len(guild.emojis)}\n"
-                f"🎨 **الستيكرات:** {len(guild.stickers)}\n"
-                "╰────────────────────╯\n\n"
+╭───・🌸 الدعم والتجميل・───╮
+🚀 **عدد البوستات:** {guild.premium_subscription_count}
+💎 **مستوى البوست:** {guild.premium_tier}
+🎭 **عدد الرتب:** {len(guild.roles)}
+😺 **الإيموجيات:** {len(guild.emojis)}
+🎨 **الستيكرات:** {len(guild.stickers)}
+╰────────────────────╯
 
-                "💖 **شكراً لكونك جزء من عائلة كيوتن**"
-            ),
-            color=0xCE44DB
+💖 **شكراً لكونك جزء من مَلَاذ  |  Sanctuary**""",
+            color=551d61
         )
 
         embed.set_thumbnail(url=guild.icon.url if guild.icon else None)
@@ -581,7 +580,7 @@ async def setup(interaction: discord.Interaction):
 
     async def about_callback(interaction):
         await interaction.response.send_message(
-            "> 🎀 **سيرفر كيوتن | Cuten 🎀**\n"
+            "> 🎀 مَلَاذ  |  Sanctuary 🎀"
             "> •———————• 🧸 •———————•\n"
             "> مرحباً بكم في عالمنا.. مكاننا مو مجرد سيرفر، هو المساحة الدافئة اللي تجمعنا كل يوم ✨ هنا صممنا مجتمع مريح لكل شخص حاب يفضفض، يسولف، أو يشارك يومياته بكل عفوية.\n"
             "> 🪐 **ليش إحنا هنا؟**\n"
@@ -604,12 +603,12 @@ async def setup(interaction: discord.Interaction):
 
     async def rules_callback(interaction):
         await interaction.response.send_message(
-            "📜 **قوانين مجتمع كيوتن | Cuten Rules** 📜\n"
+            "📜 **قوانين مجتمع مَلَاذ  |  Sanctuary ** 📜\n"
             "•———————• 🧸 •———————•\n"
             "يا هلا فيكم بنور السيرفر! ✨\n"
             "عشان تظل مساحتنا آمنة، مريحة، ومليانة طاقة إيجابية للكل، حطينا هالقوانين البسيطة. التزامك فيها يعكس ذوقك ولطفك، ويساعدنا نحافظ على بيئة محترمة تجمعنا على الخير والسوالف الحلوة.\n"
             "**الرجاء الاطلاع على البنود أدناه والالتزام بها لضمان وقت ممتع للجميع: 👇**\n"
-            "https://discord.com/channels/1506043098285867188/1506045317555163166/1506708096687538308",
+            "https://discord.com/channels/1555976368729235486/1556049395676348579",
             ephemeral=True
         )
 
@@ -624,11 +623,11 @@ async def setup(interaction: discord.Interaction):
 
     async def invite_callback(interaction):
         await interaction.response.send_message(
-            "🔗 **رابط دعوة سيرفر كيوتن | Cuten Invite Link** 🔗\n"
-            "•———————• 🧸 •———————•\n"
+            "🔗 **رابط دعوة مَلَاذ  |  Sanctuary ** 🔗\n"
+            "•———————• <a:10:1560415907682189464>  •———————•\n"
             "يا هلا فيكم بنور السيرفر! ✨\n"
-            "إذا حبيتوا تنضموا لعائلتنا الحلوة، تفضلوا الرابط أدناه وانضموا لرحلتنا الممتعة في عالم كيوتن: 👇\n"
-            "https://discord.gg/cuten",
+            "إ <a:8nwksk:1561153571578318898>  ذا حبيتوا تنضموا لعائلتنا الحلوة، تفضلوا الرابط أدناه وانضموا لرحلتنا الممتعة في عالم كيوتن: 👇\n"
+            "https://discord.gg/ml4",
             ephemeral=True
         )
 
@@ -648,11 +647,7 @@ async def setup(interaction: discord.Interaction):
             "يا هلا والله! ✨\n"
             "هنا نعتز ونفتخر بصداقتنا مع سيرفرات ومجتمعات رهيبة تشاركنا نفس الشغف والروح اللطيفة.\n"
             "هالمساحة مخصصة لدعم حلفائنا اللي نعتبرهم جزء من عائلتنا الكبيرة 💖\n\n"
-            "خذوا لكم لفة ونوّروهم في سيرفراتهم 👇\n\n"
-            "السيرفر الاول\n"
-            "https://discord.gg/ang-els\n\n"
-            "السيرفر الثاني\n"
-            "https://discord.gg/R2CnxvNFUJ",
+            "خذوا لكم لفة ونوّروهم في سيرفراتهم 👇\n\n",
             ephemeral=True
         )
 
@@ -697,29 +692,25 @@ async def setup(interaction: discord.Interaction):
 
     async def levels_callback(interaction):
         await interaction.response.send_message(
-            "📈 **مميزات اللفل| Levels System** 📈\n"
-            "\n> 🏆 **مـمـيـزات الـلـفـلات | Level Roles Perks** 🏆\n"
+"\n> 🏆 **مـمـيـزات الـلـفـلات | Level Roles Perks** 🏆\n"
             "> ‏•———————• 🧸 •———————•\n"
-            "> تفاعلكم وسوالفكم هي اللي تحوّلي السيرفر لبيتنا الثاني! ✨ وتقديراً لكل شخص يتفاعل معنا ويقضي وقته في **كيوتن**، سوينا لكم نظام لـفـلات مميز يعطيك رولات وصلاحيات كل ما زاد تفاعلك:\n"
-            "> ⭐ **【 <@&1506787978029039636> 】**\n"
+            "> تفاعلكم وسوالفكم هي اللي تحوّلي السيرفر لبيتنا الثاني! ✨ وتقديراً لكل شخص يتفاعل معنا ويقضي وقته في **مَلَاذ  |  Sanctuary**، سوينا لكم نظام لـفـلات مميز يعطيك رولات وصلاحيات كل ما زاد تفاعلك:\n"
+            "> ⭐ **【 <@&1560636911427518504>  】**\n"
             "> 🏷️ رول مميز يثبت بداية تفاعلك معنا + إمكانية استخدام الإيموجيات والستيكرات الخارجية (External Emojis).\n"
-            "> ⭐ **【 <@&1506787834428788956> 】**\n"
+            "> ⭐ **【 <@&1560637048258437200>  】**\n"
             "> 📸 صلاحية إرسال الصور والمقاطع في الشات العام.\n"
-            "> ⭐ **【 <@&1506788177195696169> 】**\n"
+            "> ⭐ **【 <@&1560637067866804285>  】**\n"
             "> 🔗 صلاحية نشر الروابط (Links) بـشكل آمن .\n"
-            "> ⭐ **【 <@&1506788259542335528> 】**\n"
+            "> ⭐ **【  <@&1560637070819725383> 】**\n"
             "> 🎙️ صلاحية استخدام الـ (Soundboard) والأصوات داخل الرومات الصوتية.\n"
-            "> 🏅 **【 <@&1506788312835424327> 】**\n"
+            "> 🏅 **【 <@&1560637072962883695>  】**\n"
             "> 🛡️ رول مميز ب اسم من اختيارك (بدون لون).\n"
-            "> 🏅 **【 <@&1506788441571065986> 】**\n"
+            "> 🏅 **【 <@&1560637075689177159>  】**\n"
             "> 💬 صلاحية تغيير النك نيم (Nickname) الخاص فيك بـنفسك.\n"
-            "> 🏅 **【 <@&1506788493161005167> 】**\n"
+            "> 🏅 **【 <@&1560637079774429295>  】**\n"
             "> الحصول على اولوية المشاركة في الفعاليات !.\n"
-            "> 👑 **【 <@&1506788542196744232> 】**\n"
-            "> ✨ صلاحية الدخول لـروم كبار الشخصيات (VIP Chat).\n"
-            "> 👑 **【 <@&1506788592490512536> 】**\n"
-            "> 🎙️ صلاحية الأولوية في الكلام (Priority Speaker) داخل الرومات الصوتية والفعاليات.\n"
-            "> 🏆 **【 <@&1506788704264388731> 】**\n"
+            "> 👑 **【 <@&1560637336507781120>  】**\n"
+            "> 🎙️ صلاحية الأولوية في الكلام (Priority Speaker) داخل الرومات الصوتية والفعاليات.\n" 
             "> 🎭 رول خـاص بـإسم مـن إختيـارك ولـون مـن ذوقـك يثبت إنك من أساطير السيرفر!\n"
             "> ‏•———————• 🤍 •———————•\n"
             "> **شدّوا الحيل في الشات ونورونا بسوالفكم الحلوة عشان توصلون لأعلى اللفلات! 🫂✨**",
@@ -741,7 +732,7 @@ async def setup(interaction: discord.Interaction):
             "•———————• 🧸 •———————•\n"
             "يا هلا فيكم بنور السيرفر! ✨\n"
             "إذا حبيتوا مساعدة أو لديك أسئلة، تفضلوا في أي وقت نحن هنا لنساعدكم.\n"
-            "https://discord.com/channels/1506043098285867188/1506046052040704040",
+            "https://discord.com/channels/1555976368729235486/1556054383207125032",
             ephemeral=True
         )
 
@@ -756,12 +747,12 @@ async def setup(interaction: discord.Interaction):
 
     async def tag_callback(interaction):
         await interaction.response.send_message(
-            "## 🎀 ┃ 𝗖𝘂𝘁𝗲𝗻 𝗧𝗮𝗴 • دعم السيرفر بالتاق\n"
+            "## 🎀 ┃ مَلَاذ  |  Sanctuary 𝗧𝗮𝗴 • دعم السيرفر بالتاق\n"
             "**يا هلا والله بالكيوتين الحلوين، ✨🌸**\n"
             "حابين نكافئ كل شخص لطيف يفتخر بوجوده معنا في **Cuten Zone** ويحب يزين بروفايله بـ تاق السيرفر الجميل جنب اسمه! 💕\n"
             "كل اللي عليك تسويه، تحط التاق اللطيف هذا جنب اسمك في الديسكورد مباشرة\n"
             "### 🧸 ┃ المزايا والهدايا اللطيفة (سهلة وبسيطة):\n"
-            "**👑 رتبة مميزة:** رتبة ** 🎀 ┃ <@&1510089783484088421>  ** بلون وردي يجنن يميّزك بقائمة الأعضاء.\n"
+            "**👑 رتبة مميزة:** رتبة ** 🎀 ┃ <@1560653486822002739>  ** بلون وردي يجنن يميّزك بقائمة الأعضاء.\n"
             " **💞 شات الداعمين:** دخول تلقائي لروم خاص لحاملي التاق (روم سوالف ورايق).\n"
             "* **📸 صلاحيات حصرية:** تقدر تنزل صور ومقاطع في الشات العام (بدون ما تحتاج لفل عالي).\n"
             "### 🍰 ┃ كيف تستلم مكافأتك اللطيفة؟\n"
@@ -954,6 +945,7 @@ async def اقتراح(interaction: discord.Interaction, النوع: discord.app
         return
 
     await interaction.response.send_modal(SuggestionModal(النوع.value))
+
 @bot.command(name="رصيدي")
 async def رصيدي(ctx):
     data = load_points()
@@ -1692,6 +1684,7 @@ async def تحويل(
     )
 
     await interaction.response.send_message(embed=embed)
+
 @bot.tree.command(name="توب_الكوينز", description="عرض أغنى أعضاء السيرفر")
 async def توب_الكوينز(interaction: discord.Interaction):
 
@@ -1856,6 +1849,7 @@ async def حالة_الفعالية(interaction: discord.Interaction):
         color = 0xED4245
 
     await interaction.response.send_message(embed=discord.Embed(title="🎉 حالة الفعالية", description=text, color=color))
+  
   # =========================
 # 🛡️ نظام البان والطرد
 # =========================
