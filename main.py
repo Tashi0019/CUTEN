@@ -564,7 +564,16 @@ async def sync(ctx):
 
 @bot.tree.command(name="setup", description="إرسال لوحة تعريف السيرفر")
 async def setup(interaction: discord.Interaction):
+    print("DEBUG: /setup command started")
 
+    try:
+        await interaction.response.send_message(
+            "وصل أمر setup للبوت بنجاح!",
+            ephemeral=True
+        )
+    except Exception as e:
+        print(f"SETUP ERROR: {type(e).__name__}: {e}")
+        raise
     embed = discord.Embed(
         title="<a:fku:1509688683643666472> cuten",
         description="أهلًا فيك في كيوتن\nاستخدم الأزرار بالأسفل للتعرف على سيرفرنا ومميزاته",
