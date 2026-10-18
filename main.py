@@ -431,7 +431,11 @@ async def on_message(message):
 ╰────────────────────╯
 
 💖 **شكراً لكونك جزء من مَلَاذ  |  Sanctuary**""",
-            color=551d61
+          
+color=0x551D61
+
+
+
         )
 
         embed.set_thumbnail(url=guild.icon.url if guild.icon else None)
