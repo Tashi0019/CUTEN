@@ -566,17 +566,9 @@ async def sync(ctx):
 async def setup(interaction: discord.Interaction):
     print("DEBUG: /setup command started")
 
-    try:
-        await interaction.response.send_message(
-            "وصل أمر setup للبوت بنجاح!",
-            ephemeral=True
-        )
-    except Exception as e:
-        print(f"SETUP ERROR: {type(e).__name__}: {e}")
-        raise
     embed = discord.Embed(
-        title="<a:fku:1509688683643666472> cuten",
-        description="أهلًا فيك في كيوتن\nاستخدم الأزرار بالأسفل للتعرف على سيرفرنا ومميزاته",
+        title="<a:fku:1509688683643666472> مَلَاذ | Sanctuary",
+        description="أهلًا فيك في مَلَاذ\nاستخدم الأزرار بالأسفل للتعرف على سيرفرنا ومميزاته",
         color=0xCE44DB
     )
 
@@ -778,7 +770,10 @@ async def setup(interaction: discord.Interaction):
     tag_button.callback = tag_callback
     view.add_item(tag_button)
 
-    await interaction.response.send_message(embed=embed, view=view)
+    await interaction.response.send_message(
+    embed=embed,
+    view=view
+)
 
 
 class AdminReplyModal(discord.ui.Modal, title="رد الإدارة على الاقتراح"):
