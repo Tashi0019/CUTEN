@@ -1079,7 +1079,7 @@ async def اوامر(ctx):
 
 SHOP_REQUESTS_CHANNEL_ID = 1556062928208134254
 COIN_EMOJI = "<:sanctuarycoin:<:emoji_263:1565451856409268354>"
-SHOP_IMAGE_URL = "https://i.imgur.com/WdTt5xZ.png"
+SHOP_IMAGE_URL = "https://cdn.discordapp.com/attachments/1557824179754111046/1565455267116744856/1793303808737.jpg?ex=6ae4f754&is=6ae3a5d4&hm=a0660a6f7aa6e53b1595409cac092151ce1a16e1092820e1b8cba7bfe7e4990b"
 
 SHOP_ITEMS = {
     "color": {
