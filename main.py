@@ -1077,7 +1077,7 @@ async def اوامر(ctx):
     await ctx.reply(embed=embed, mention_author=False)
 
 
-SHOP_REQUESTS_CHANNEL_ID = 1508502264703090779
+SHOP_REQUESTS_CHANNEL_ID = 1556062928208134254
 COIN_EMOJI = "<:cutecoin:1515057427920322682>"
 SHOP_IMAGE_URL = "https://i.imgur.com/WdTt5xZ.png"
 
